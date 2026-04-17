@@ -42,7 +42,7 @@ const TITELS: Record<string, string> = {
 
 export default function ClassificatieTab({ bronnen, onChange }: Props) {
   const teClassificeren = bronnen.filter(
-    (b) => CLASSIFICEERBARE_TYPES.includes(b.type) && !b.fout && b.rijen.length > 0,
+    (b) => CLASSIFICEERBARE_TYPES.includes(b.type) && !b.fout && b.type_bevestigd && b.rijen.length > 0,
   );
 
   if (teClassificeren.length === 0) {

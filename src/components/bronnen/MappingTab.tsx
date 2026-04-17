@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,11 +21,11 @@ interface Props {
 
 export default function MappingTab({ bronnen, onChange }: Props) {
   const teMappen = bronnen.filter(
-    (b) => b.type !== "niet_gebruiken" && !b.fout,
+    (b) => b.type !== "niet_gebruiken" && !b.fout && b.type_bevestigd,
   );
 
   if (teMappen.length === 0) {
-    return <p className="text-sm text-muted-foreground">Upload eerst bronbestanden in tab 1.</p>;
+    return <p className="text-sm text-muted-foreground">Bevestig eerst het type van geüploade bestanden in tab 1.</p>;
   }
 
   return (
@@ -40,9 +40,22 @@ export default function MappingTab({ bronnen, onChange }: Props) {
 function MappingKaart({ bron, onChange }: { bron: BronBestand; onChange: () => void }) {
   const type = bron.type as Exclude<BronType, "niet_gebruiken">;
   const verplicht = VERPLICHTE_VELDEN[type];
-  const [mapping, setMapping] = useState<Record<string, string>>(
-    bron.mapping || suggestMapping(type, bron.headers),
-  );
+  const initial = bron.mapping && Object.keys(bron.mapping).length > 0
+    ? bron.mapping
+    : suggestMapping(type, bron.headers);
+  const [mapping, setMapping] = useState<Record<string, string>>(initial);
+
+  // Persist auto-suggested mapping direct zodat tab 3/4 het zien.
+  useEffect(() => {
+    if (!bron.mapping || Object.keys(bron.mapping).length === 0) {
+      if (Object.keys(initial).length > 0) {
+        upsertBron({ ...bron, mapping: initial });
+        onChange();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bron.id]);
+
   const opgeslagen = getSavedMapping(bron.type);
 
   const update = (veld: string, header: string) => {

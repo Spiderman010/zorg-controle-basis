@@ -42,7 +42,7 @@ export default function UploadTab({ dossierId, bronnen, onChange }: Props) {
         />
       ))}
       <UnclassifiedKaart
-        bestanden={bronnen.filter((b) => b.type_auto_herkend === false && !b.mapping)}
+        bestanden={bronnen.filter((b) => !b.fout && !b.type_bevestigd)}
         onChange={onChange}
       />
     </div>
@@ -165,7 +165,7 @@ function BestandsRij({
         <Select
           value={bron.type}
           onValueChange={(v) => {
-            upsertBron({ ...bron, type: v as BronType, type_auto_herkend: false });
+            upsertBron({ ...bron, type: v as BronType, type_auto_herkend: false, type_bevestigd: true });
             onChange();
           }}
         >
@@ -182,6 +182,18 @@ function BestandsRij({
             <SelectItem value="niet_gebruiken">Niet gebruiken</SelectItem>
           </SelectContent>
         </Select>
+        {!bron.type_bevestigd && bron.type !== "niet_gebruiken" && (
+          <Button
+            size="sm"
+            variant="default"
+            onClick={() => {
+              upsertBron({ ...bron, type_bevestigd: true });
+              onChange();
+            }}
+          >
+            Bevestig
+          </Button>
+        )}
         <Button
           size="sm"
           variant="ghost"
@@ -193,7 +205,7 @@ function BestandsRij({
           Verwijder
         </Button>
       </div>
-      {bron.type_auto_herkend && (
+      {bron.type_auto_herkend && !bron.type_bevestigd && (
         <p className="mt-1 text-[11px] text-muted-foreground">Type automatisch herkend — bevestig of wijzig.</p>
       )}
     </li>
@@ -209,13 +221,15 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
       return;
     }
     const auto = voorgesteldType ?? detectBronType(file.name, headers);
+    const isManueel = !!voorgesteldType;
     upsertBron({
       id: crypto.randomUUID(),
       dossier_id: dossierId,
       bestandsnaam: file.name,
       geupload_op: new Date().toISOString(),
       type: auto ?? ("niet_gebruiken" as BronType),
-      type_auto_herkend: !!auto && !voorgesteldType,
+      type_auto_herkend: !!auto && !isManueel,
+      type_bevestigd: isManueel, // automatisch geraden moet nog bevestigd worden
       headers,
       rijen: rows,
       preview_rows: Math.min(5, rows.length),
@@ -233,6 +247,7 @@ function makeFout(dossierId: string, naam: string, fout: string): BronBestand {
     geupload_op: new Date().toISOString(),
     type: "niet_gebruiken",
     type_auto_herkend: false,
+    type_bevestigd: true,
     headers: [],
     rijen: [],
     preview_rows: 0,
