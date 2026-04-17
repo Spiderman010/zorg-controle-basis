@@ -11,9 +11,9 @@ interface Props {
 }
 
 const KLEUR: Record<"groen" | "oranje" | "rood", string> = {
-  groen: "bg-emerald-500/15 text-emerald-700 border-emerald-500/30 dark:text-emerald-400",
-  oranje: "bg-amber-500/15 text-amber-700 border-amber-500/30 dark:text-amber-400",
-  rood: "bg-red-500/15 text-red-700 border-red-500/30 dark:text-red-400",
+  groen: "border-success/40 bg-success/10 text-success-foreground",
+  oranje: "border-warning/40 bg-warning/10 text-warning-foreground",
+  rood: "border-destructive/40 bg-destructive/10 text-destructive",
 };
 
 export default function ValidatieTab({ bronnen, dossierId }: Props) {

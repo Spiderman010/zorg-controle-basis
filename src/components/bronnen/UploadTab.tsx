@@ -136,7 +136,14 @@ function BestandsRij({
         <div className="font-medium">{bron.bestandsnaam}</div>
         <div className="text-xs text-destructive">{bron.fout}</div>
         <div className="mt-2 flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => deleteBron(bron.id) || onChange()}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              deleteBron(bron.id);
+              onChange();
+            }}
+          >
             Opnieuw proberen
           </Button>
         </div>
