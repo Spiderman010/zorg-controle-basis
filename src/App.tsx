@@ -8,6 +8,8 @@ import Dashboard from "./pages/Dashboard";
 import NewDossier from "./pages/NewDossier";
 import DossierDetail from "./pages/DossierDetail";
 import DossierBronnen from "./pages/DossierBronnen";
+import DossierControle from "./pages/DossierControle";
+import DossierRapportage from "./pages/DossierRapportage";
 import Debug from "./pages/Debug";
 import NotFound from "./pages/NotFound";
 
@@ -25,6 +27,8 @@ const App = () => (
             <Route path="/dossiers/nieuw" element={<NewDossier />} />
             <Route path="/dossiers/:id" element={<DossierDetail />} />
             <Route path="/dossiers/:id/bronnen" element={<DossierBronnen />} />
+            <Route path="/dossiers/:id/controle" element={<DossierControle />} />
+            <Route path="/dossiers/:id/rapportage" element={<DossierRapportage />} />
             <Route path="/debug" element={<Debug />} />
           </Route>
           <Route path="*" element={<NotFound />} />
