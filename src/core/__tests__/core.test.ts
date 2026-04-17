@@ -179,6 +179,58 @@ describe("checks - grijs bij ontbrekende bronnen", () => {
   });
 });
 
+describe("exacte drempelscenario's (acceptatiecriteria)", () => {
+  // Helpers: maak datasets die exact de gewenste ratio produceren.
+  // Basis: revenue 1.000.000, paid_hours 10.000.
+  const mkPersonnelRatio = (pct: number) => makeDataset({
+    payroll: [{ ...base, payroll_component: "loon", amount: pct * 1_000_000 - 100_000 }],
+    // external_hire blijft 100_000 → (payroll + 100k) / 1M = pct
+  });
+  const mkDirectRatio = (pct: number) => makeDataset({
+    direct_hours: [{ ...base, employee_id: "E1", direct_hours: pct * 10_000 }],
+  });
+  const mkRemainingRatio = (pct: number) => makeDataset({
+    // resturen = 10000 - direct - 1500 = pct*10000  ⇒ direct = 8500 - pct*10000
+    direct_hours: [{ ...base, employee_id: "E1", direct_hours: 8_500 - pct * 10_000 }],
+  });
+
+  const statusOf = (ds: Dataset, id: string) =>
+    runChecks(ds).find((r) => r.id === id)!.status;
+
+  it("personeelslastenratio: 70% groen, 80% oranje, 90% rood", () => {
+    expect(statusOf(mkPersonnelRatio(0.70), "personnel_cost_ratio")).toBe("groen");
+    expect(statusOf(mkPersonnelRatio(0.80), "personnel_cost_ratio")).toBe("oranje");
+    expect(statusOf(mkPersonnelRatio(0.90), "personnel_cost_ratio")).toBe("rood");
+  });
+
+  it("directe urenratio: 70% groen, 55% oranje, 45% rood", () => {
+    expect(statusOf(mkDirectRatio(0.70), "direct_hours_ratio")).toBe("groen");
+    expect(statusOf(mkDirectRatio(0.55), "direct_hours_ratio")).toBe("oranje");
+    expect(statusOf(mkDirectRatio(0.45), "direct_hours_ratio")).toBe("rood");
+  });
+
+  it("resturenratio: 10% groen, 20% oranje, 30% rood", () => {
+    expect(statusOf(mkRemainingRatio(0.10), "remaining_hours_analysis")).toBe("groen");
+    expect(statusOf(mkRemainingRatio(0.20), "remaining_hours_analysis")).toBe("oranje");
+    expect(statusOf(mkRemainingRatio(0.30), "remaining_hours_analysis")).toBe("rood");
+  });
+
+  it("deling door nul crasht niet en geeft grijs", () => {
+    const ds = makeDataset({ revenue: [], paid_hours: [], direct_hours: [], non_productive_hours: [] });
+    expect(() => runChecks(ds)).not.toThrow();
+    expect(statusOf(ds, "personnel_cost_ratio")).toBe("grijs");
+    expect(statusOf(ds, "direct_hours_ratio")).toBe("grijs");
+    expect(statusOf(ds, "remaining_hours_analysis")).toBe("grijs");
+  });
+
+  it("ontbrekende tweede bron geeft exacte melding", () => {
+    const ds = makeDataset({ secondary_totals: {} });
+    const r = runChecks(ds).find((x) => x.id === "revenue_reconciliation")!;
+    expect(r.status).toBe("grijs");
+    expect(r.message).toBe("Niet uitvoerbaar – tweede bron zorgopbrengsten ontbreekt");
+  });
+});
+
 describe("summarize", () => {
   it("rekent grijze controles niet mee in score", () => {
     const ds = makeDataset({ secondary_totals: {} }); // 3 aansluitingen worden grijs

@@ -54,7 +54,13 @@ const Index = () => {
 
       <section className="mb-8">
         <h2 className="text-lg font-bold mb-2">Controles ({score.total}) — score: {score.score !== undefined ? (score.score * 100).toFixed(0) + "%" : "n.v.t."}</h2>
-        <p className="mb-3 opacity-70">groen: {score.groen} · oranje: {score.oranje} · rood: {score.rood} · grijs: {score.grijs} (niet meegerekend)</p>
+        <p className="mb-1 opacity-70">groen: {score.groen} · oranje: {score.oranje} · rood: {score.rood} · grijs: {score.grijs} (niet meegerekend)</p>
+        <p className="mb-3 opacity-60 text-xs">
+          Formule: score = (groen × 1 + oranje × 0,5 + rood × 0) / (groen + oranje + rood)
+          {" = "}({score.groen} + 0,5 × {score.oranje} + 0 × {score.rood}) / {score.groen + score.oranje + score.rood}
+          {score.score !== undefined && ` = ${score.score.toFixed(3)} → ${(score.score * 100).toFixed(0)}%`}
+          . Grijze controles ({score.grijs}) tellen niet mee.
+        </p>
         <ul className="space-y-2">
           {results.map((r) => (
             <li key={r.id} className="p-3 rounded flex items-start gap-3" style={{ background: "#111827" }}>
