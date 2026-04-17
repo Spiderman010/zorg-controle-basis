@@ -4,7 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDossier } from "@/lib/dossiers";
 import { buildDataset } from "@/lib/datasetBuilder";
-import { computeMetrics, runChecks, summarize, type CheckId, type CheckResult } from "@/core";
+import {
+  computeMetrics,
+  runChecks,
+  runTrendChecksFromDataset,
+  type CheckId,
+  type CheckResult,
+  type CheckStatus,
+  type TrendCheckResult,
+} from "@/core";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 
 const CHECK_CODES: Record<CheckId, string> = {
@@ -31,47 +39,83 @@ function fmtPct(n: number | undefined) {
   return `${(n * 100).toFixed(1)}%`;
 }
 
-function bouwConclusie(checks: CheckResult[]): {
+interface ConclusieResult {
   conclusie: string;
-  bevindingen: string[];
+  betrouwbaarheid: string;
+  bevindingen: { code: string; status: CheckStatus; tekst: string }[];
   risicos: string[];
   verbeterpunten: string[];
-  betrouwbaarheid: string;
-} {
-  const uitvoerbaar = checks.filter((c) => c.status !== "grijs");
-  const grijs = checks.filter((c) => c.status === "grijs");
-  const rood = uitvoerbaar.filter((c) => c.status === "rood");
-  const oranje = uitvoerbaar.filter((c) => c.status === "oranje");
-  const groen = uitvoerbaar.filter((c) => c.status === "groen");
-
-  let conclusie: string;
-  if (uitvoerbaar.length === 0) {
-    conclusie = "Er zijn geen uitvoerbare controles. Vul aanvullende bronnen aan om een oordeel te kunnen geven.";
-  } else if (rood.length > 0) {
-    conclusie = `Er is sprake van een verhoogd risico: ${rood.length} controle(s) staan op rood. Nadere opvolging en onderbouwing is noodzakelijk.`;
-  } else if (oranje.length > 0) {
-    conclusie = `De controles zijn grotendeels in orde, maar ${oranje.length} aandachtspunt(en) verdienen nadere analyse en verbeteradvies.`;
-  } else {
-    conclusie = `Alle ${groen.length} uitvoerbare controles zijn groen. Het beeld is positief en consistent.`;
-  }
-
-  const bevindingen = uitvoerbaar.map((c) => `${CHECK_CODES[c.id]} ${c.label}: ${c.message}`);
-  const risicos = rood.map((c) => `${CHECK_CODES[c.id]} ${c.label} — ${c.message}`);
-  const verbeterpunten = oranje.map((c) => `${CHECK_CODES[c.id]} ${c.label} — ${c.message}`);
-
-  const totaal = checks.length;
-  const dekking = totaal === 0 ? 0 : Math.round((uitvoerbaar.length / totaal) * 100);
-  let betrouwbaarheid: string;
-  if (dekking >= 80) betrouwbaarheid = `Hoog (${dekking}% van de controles uitvoerbaar).`;
-  else if (dekking >= 50) betrouwbaarheid = `Gemiddeld (${dekking}% van de controles uitvoerbaar). Aanvullende bronnen vergroten de betrouwbaarheid.`;
-  else betrouwbaarheid = `Beperkt (${dekking}% van de controles uitvoerbaar). Vul aanvullende bronnen aan voor een vollediger beeld.`;
-
-  if (grijs.length > 0) {
-    bevindingen.push(`${grijs.length} controle(s) zijn niet uitvoerbaar wegens ontbrekende bronnen en wegen niet mee in het oordeel.`);
-  }
-
-  return { conclusie, bevindingen, risicos, verbeterpunten, betrouwbaarheid };
 }
+
+function bouwConclusie(checks: CheckResult[], trends: TrendCheckResult[]): ConclusieResult {
+  const all: { code: string; status: CheckStatus; label: string; message: string }[] = [
+    ...checks.map((c) => ({ code: CHECK_CODES[c.id], status: c.status, label: c.label, message: c.message })),
+    ...trends.map((t) => ({ code: t.code, status: t.status, label: t.label, message: t.message })),
+  ];
+
+  const totaalKern = checks.length;
+  const uitvoerbaarKern = checks.filter((c) => c.status !== "grijs").length;
+  const grijzeKern = checks.filter((c) => c.status === "grijs");
+  const rood = all.filter((c) => c.status === "rood");
+  const oranje = all.filter((c) => c.status === "oranje");
+  const grijsAll = all.filter((c) => c.status === "grijs");
+  const groen = all.filter((c) => c.status === "groen");
+
+  // Conclusie kort en zakelijk, op basis van uitvoerbare kerncontroles
+  let conclusie: string;
+  if (uitvoerbaarKern === 0) {
+    conclusie = "Geen oordeel mogelijk: geen enkele kerncontrole is uitvoerbaar door ontbrekende bronnen.";
+  } else if (rood.length > 0) {
+    conclusie = `Verhoogd risico: ${rood.length} controle(s) op rood. Nadere opvolging is noodzakelijk.`;
+  } else if (oranje.length > 0) {
+    conclusie = `Aandachtspunten: ${oranje.length} controle(s) op oranje. Verbeteradvies aanbevolen.`;
+  } else {
+    conclusie = `Beeld is positief: alle ${groen.length} uitvoerbare controle(s) zijn groen.`;
+  }
+
+  // Betrouwbaarheid
+  let niveau: string;
+  if (uitvoerbaarKern === totaalKern) niveau = "Hoog";
+  else if (uitvoerbaarKern >= Math.ceil(totaalKern * 0.6)) niveau = "Gemiddeld";
+  else if (uitvoerbaarKern >= Math.ceil(totaalKern * 0.3)) niveau = "Beperkt tot gemiddeld";
+  else niveau = "Beperkt";
+  let betrouwbaarheid = `${niveau}: ${uitvoerbaarKern} van de ${totaalKern} kerncontroles zijn uitvoerbaar op basis van de beschikbare bronnen.`;
+  if (grijzeKern.length > 0) {
+    const ontbrekend = grijzeKern.map((c) => c.message.replace(/^Niet uitvoerbaar – /, "")).slice(0, 3).join("; ");
+    betrouwbaarheid += ` Beperking veroorzaakt door ontbrekende bronnen (${ontbrekend}${grijzeKern.length > 3 ? ", …" : ""}).`;
+  }
+
+  // Bevindingen geprioriteerd
+  const bevindingen: ConclusieResult["bevindingen"] = [
+    ...rood.map((c) => ({ code: c.code, status: "rood" as const, tekst: `${c.label}: ${c.message}` })),
+    ...oranje.map((c) => ({ code: c.code, status: "oranje" as const, tekst: `${c.label}: ${c.message}` })),
+    ...grijsAll.map((c) => ({ code: c.code, status: "grijs" as const, tekst: `${c.label}: ${c.message}` })),
+  ];
+  if (rood.length === 0 && oranje.length === 0 && grijsAll.length === 0 && groen.length > 0) {
+    bevindingen.push({ code: "—", status: "groen", tekst: `${groen.length} controle(s) groen — geen bijzonderheden.` });
+  }
+
+  // Risico's
+  const risicos = rood.map((c) => `${c.code} ${c.label} — ${c.message}`);
+
+  // Verbeterpunten uit oranje + rood + grijs (concreet)
+  const verbeterpunten: string[] = [];
+  for (const c of rood) verbeterpunten.push(`${c.code} ${c.label}: nader onderzoek en onderbouwing nodig — ${c.message}`);
+  for (const c of oranje) verbeterpunten.push(`${c.code} ${c.label}: oorzaak van afwijking analyseren — ${c.message}`);
+  for (const c of grijsAll) {
+    const reden = c.message.replace(/^Niet uitvoerbaar – /, "");
+    verbeterpunten.push(`${c.code} ${c.label}: aanvullen ontbrekende onderbouwing (${reden}).`);
+  }
+
+  return { conclusie, betrouwbaarheid, bevindingen, risicos, verbeterpunten };
+}
+
+const STATUS_KLEUR: Record<CheckStatus, string> = {
+  rood: "border-l-destructive",
+  oranje: "border-l-warning",
+  grijs: "border-l-muted-foreground",
+  groen: "border-l-success",
+};
 
 export default function DossierRapportage() {
   const { id = "" } = useParams();
@@ -80,7 +124,12 @@ export default function DossierRapportage() {
   const data = useMemo(() => {
     if (!d) return null;
     const { dataset } = buildDataset(d.id);
-    return { dataset, metrics: computeMetrics(dataset), checks: runChecks(dataset), summary: summarize(runChecks(dataset)) };
+    return {
+      dataset,
+      metrics: computeMetrics(dataset),
+      checks: runChecks(dataset),
+      trends: runTrendChecksFromDataset(dataset),
+    };
   }, [d]);
 
   if (!d) {
@@ -113,8 +162,8 @@ export default function DossierRapportage() {
     );
   }
 
-  const { metrics: m, checks } = data;
-  const c = bouwConclusie(checks);
+  const { metrics: m, checks, trends } = data;
+  const c = bouwConclusie(checks, trends);
 
   return (
     <div className="space-y-6">
@@ -130,6 +179,14 @@ export default function DossierRapportage() {
           <Button onClick={() => window.print()}>Afdrukken</Button>
         </div>
       </header>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Conclusie</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p className="font-medium">{c.conclusie}</p>
+          <p className="text-muted-foreground">{c.betrouwbaarheid}</p>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader><CardTitle className="text-base">Kerncijfers</CardTitle></CardHeader>
@@ -172,41 +229,58 @@ export default function DossierRapportage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Conclusie</CardTitle></CardHeader>
-        <CardContent className="space-y-4 text-sm">
-          <p>{c.conclusie}</p>
+        <CardHeader><CardTitle className="text-base">Aanvullende verbandscontroles</CardTitle></CardHeader>
+        <CardContent>
+          <ul className="divide-y">
+            {trends.map((t) => (
+              <li key={t.id} className="flex items-center gap-3 py-2 text-sm">
+                <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{t.code}</span>
+                <span className="flex-1">{t.label}</span>
+                <span className="hidden text-xs text-muted-foreground md:inline">{t.message}</span>
+                <StatusBadge status={t.status} />
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
 
-          <div>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Belangrijkste bevindingen</h3>
-            <ul className="list-disc space-y-1 pl-5">
-              {c.bevindingen.map((b, i) => <li key={i}>{b}</li>)}
-            </ul>
-          </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Belangrijkste bevindingen</CardTitle></CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm">
+            {c.bevindingen.map((b, i) => (
+              <li key={i} className={`border-l-2 pl-3 ${STATUS_KLEUR[b.status]}`}>
+                <span className="font-mono text-xs text-muted-foreground">{b.code}</span>{" "}
+                <span>{b.tekst}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
 
-          <div>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Top-risico's</h3>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle className="text-base">Top-risico's</CardTitle></CardHeader>
+          <CardContent className="text-sm">
             {c.risicos.length === 0 ? (
               <p className="text-muted-foreground">Geen rode controles geconstateerd.</p>
             ) : (
               <ul className="list-disc space-y-1 pl-5">{c.risicos.map((r, i) => <li key={i}>{r}</li>)}</ul>
             )}
-          </div>
+          </CardContent>
+        </Card>
 
-          <div>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Verbeterpunten</h3>
+        <Card>
+          <CardHeader><CardTitle className="text-base">Verbeterpunten</CardTitle></CardHeader>
+          <CardContent className="text-sm">
             {c.verbeterpunten.length === 0 ? (
-              <p className="text-muted-foreground">Geen oranje controles geconstateerd.</p>
+              <p className="text-muted-foreground">Geen verbeterpunten — alle controles in orde.</p>
             ) : (
               <ul className="list-disc space-y-1 pl-5">{c.verbeterpunten.map((v, i) => <li key={i}>{v}</li>)}</ul>
             )}
-          </div>
-
-          <div>
-            <h3 className="mb-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Betrouwbaarheid van de analyse</h3>
-            <p>{c.betrouwbaarheid}</p>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

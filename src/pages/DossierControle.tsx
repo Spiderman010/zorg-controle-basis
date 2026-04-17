@@ -264,6 +264,47 @@ export default function DossierControle() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Aanvullende verbandscontroles (trend) */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Aanvullende verbandscontroles</h2>
+        <Card>
+          <CardContent className="p-0">
+            <Accordion type="multiple" className="w-full">
+              {trends.map((t) => (
+                <AccordionItem key={t.id} value={t.id} className="px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex flex-1 items-center gap-3 pr-4 text-left">
+                      <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{t.code}</span>
+                      <span className="flex-1 text-sm font-medium">{t.label}</span>
+                      <span className="hidden text-xs text-muted-foreground md:inline">{t.message}</span>
+                      <StatusBadge status={t.status} />
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-2 pb-4 pl-20 pr-4 text-sm">
+                    <p className="text-muted-foreground">{t.message}</p>
+                    {t.details && (
+                      <dl className="grid grid-cols-1 gap-1 sm:grid-cols-2 text-xs">
+                        {Object.entries(t.details)
+                          .filter(([, v]) => v !== undefined)
+                          .map(([k, v]) => (
+                            <div key={k} className="font-mono">
+                              <span className="text-muted-foreground">{k}:</span>{" "}
+                              {typeof v === "number" ? fmtNum(v, 2) : v}
+                            </div>
+                          ))}
+                      </dl>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
+        <p className="text-xs text-muted-foreground">
+          Trendcontroles vergelijken de laatste twee periodes en tellen niet mee in de score.
+        </p>
+      </section>
     </div>
   );
 }
