@@ -49,8 +49,14 @@ export default function DossierDetail() {
       </Card>
 
       <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          Stap 2: Bronnen uploaden — nog niet beschikbaar.
+        <CardHeader><CardTitle className="text-base">Stap 2: Bronnen</CardTitle></CardHeader>
+        <CardContent className="flex items-center justify-between gap-4">
+          <p className="text-sm text-muted-foreground">
+            Upload bronbestanden, koppel kolommen, classificeer regels en bekijk de validatie.
+          </p>
+          <Button asChild>
+            <Link to={`/dossiers/${d.id}/bronnen`}>Bronnen uploaden</Link>
+          </Button>
         </CardContent>
       </Card>
 

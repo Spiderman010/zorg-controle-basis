@@ -7,6 +7,7 @@ import AppShell from "@/components/AppShell";
 import Dashboard from "./pages/Dashboard";
 import NewDossier from "./pages/NewDossier";
 import DossierDetail from "./pages/DossierDetail";
+import DossierBronnen from "./pages/DossierBronnen";
 import Debug from "./pages/Debug";
 import NotFound from "./pages/NotFound";
 
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/" element={<Dashboard />} />
             <Route path="/dossiers/nieuw" element={<NewDossier />} />
             <Route path="/dossiers/:id" element={<DossierDetail />} />
+            <Route path="/dossiers/:id/bronnen" element={<DossierBronnen />} />
             <Route path="/debug" element={<Debug />} />
           </Route>
           <Route path="*" element={<NotFound />} />
