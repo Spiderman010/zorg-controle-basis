@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { getDossier } from "@/lib/dossiers";
 import { buildDataset } from "@/lib/datasetBuilder";
-import { computeMetrics, runChecks, summarize, type CheckId, type CheckResult } from "@/core";
+import { computeMetrics, runChecks, runTrendChecksFromDataset, summarize, type CheckId, type CheckResult } from "@/core";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 
 const CHECK_CODES: Record<CheckId, string> = {
@@ -101,9 +101,10 @@ export default function DossierControle() {
     const { dataset } = buildDataset(d.id);
     const metrics = computeMetrics(dataset);
     const checks = runChecks(dataset);
+    const trends = runTrendChecksFromDataset(dataset);
     const summary = summarize(checks);
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, summary, byId };
+    return { dataset, metrics, checks, trends, summary, byId };
   }, [d]);
 
   if (!d) {
@@ -116,7 +117,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, summary, byId } = data;
+  const { metrics, checks, trends, summary, byId } = data;
   const m = metrics;
 
   const heeftBronnen = (data.dataset.revenue?.length ?? 0) > 0 || (data.dataset.payroll?.length ?? 0) > 0;
