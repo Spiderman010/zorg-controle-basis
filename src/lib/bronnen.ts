@@ -50,6 +50,7 @@ export interface BronBestand {
   geupload_op: string; // ISO
   type: BronType; // bevestigd of "niet_gebruiken" of automatisch geraden
   type_auto_herkend: boolean;
+  type_bevestigd: boolean; // true zodra gebruiker het type heeft bevestigd of handmatig gekozen
   headers: string[];
   rijen: string[][]; // ruwe data zonder header
   preview_rows: number;
