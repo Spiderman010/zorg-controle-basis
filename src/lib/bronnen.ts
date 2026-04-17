@@ -64,7 +64,12 @@ const MAPPING_KEY = "zcb.mappings.v1"; // opgeslagen mappings per importtype (kl
 
 function read(): BronBestand[] {
   try {
-    return JSON.parse(localStorage.getItem(KEY) || "[]") as BronBestand[];
+    const raw = JSON.parse(localStorage.getItem(KEY) || "[]") as BronBestand[];
+    // Backwards-compat: oudere records hadden geen type_bevestigd.
+    return raw.map((b) => ({
+      ...b,
+      type_bevestigd: b.type_bevestigd ?? (b.type !== "niet_gebruiken" || !!b.fout),
+    }));
   } catch {
     return [];
   }
