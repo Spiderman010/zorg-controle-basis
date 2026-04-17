@@ -17,9 +17,10 @@ import {
 interface Props {
   bronnen: BronBestand[];
   onChange: () => void;
+  bedrijfsnaam?: string;
 }
 
-export default function MappingTab({ bronnen, onChange }: Props) {
+export default function MappingTab({ bronnen, onChange, bedrijfsnaam }: Props) {
   const teMappen = bronnen.filter(
     (b) => b.type !== "niet_gebruiken" && !b.fout && b.type_bevestigd,
   );
@@ -31,13 +32,21 @@ export default function MappingTab({ bronnen, onChange }: Props) {
   return (
     <div className="space-y-4">
       {teMappen.map((b) => (
-        <MappingKaart key={b.id} bron={b} onChange={onChange} />
+        <MappingKaart key={b.id} bron={b} onChange={onChange} bedrijfsnaam={bedrijfsnaam} />
       ))}
     </div>
   );
 }
 
-function MappingKaart({ bron, onChange }: { bron: BronBestand; onChange: () => void }) {
+function MappingKaart({
+  bron,
+  onChange,
+  bedrijfsnaam,
+}: {
+  bron: BronBestand;
+  onChange: () => void;
+  bedrijfsnaam?: string;
+}) {
   const type = bron.type as Exclude<BronType, "niet_gebruiken">;
   const verplicht = VERPLICHTE_VELDEN[type];
   const initial = bron.mapping && Object.keys(bron.mapping).length > 0
@@ -45,7 +54,7 @@ function MappingKaart({ bron, onChange }: { bron: BronBestand; onChange: () => v
     : suggestMapping(type, bron.headers);
   const [mapping, setMapping] = useState<Record<string, string>>(initial);
 
-  // Persist auto-suggested mapping direct zodat tab 3/4 het zien.
+  // Persist auto-suggested mapping zodat tab 3/4 het zien.
   useEffect(() => {
     if (!bron.mapping || Object.keys(bron.mapping).length === 0) {
       if (Object.keys(initial).length > 0) {
@@ -56,7 +65,10 @@ function MappingKaart({ bron, onChange }: { bron: BronBestand; onChange: () => v
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bron.id]);
 
-  const opgeslagen = getSavedMapping(bron.type);
+  const opgeslagen = getSavedMapping(bron.type, bedrijfsnaam);
+  // Toon "Gebruik vorige mapping" alleen als de opgeslagen mapping daadwerkelijk verschilt
+  const verschilt =
+    opgeslagen && JSON.stringify(opgeslagen) !== JSON.stringify(mapping);
 
   const update = (veld: string, header: string) => {
     const next = { ...mapping, [veld]: header };
@@ -73,7 +85,7 @@ function MappingKaart({ bron, onChange }: { bron: BronBestand; onChange: () => v
             {bron.bestandsnaam} <Badge variant="outline" className="ml-2">{BRON_LABELS[bron.type]}</Badge>
           </span>
           <div className="flex gap-2">
-            {opgeslagen && (
+            {opgeslagen && verschilt && (
               <Button
                 size="sm"
                 variant="outline"
@@ -89,7 +101,7 @@ function MappingKaart({ bron, onChange }: { bron: BronBestand; onChange: () => v
             <Button
               size="sm"
               onClick={() => {
-                saveMapping(bron.type, mapping);
+                saveMapping(bron.type, mapping, bedrijfsnaam);
                 onChange();
               }}
             >
