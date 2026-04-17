@@ -98,8 +98,8 @@ export function deleteBron(id: string) {
   write(read().filter((b) => b.id !== id));
 }
 
-// ---- Opgeslagen mappings (klantprofiel) ----
-type MappingStore = Record<string, Record<string, string>>; // type -> mapping
+// ---- Opgeslagen mappings (klantprofiel per bedrijfsnaam + type) ----
+type MappingStore = Record<string, Record<string, string>>; // sleutel -> mapping
 function readMappings(): MappingStore {
   try {
     return JSON.parse(localStorage.getItem(MAPPING_KEY) || "{}");
@@ -107,22 +107,49 @@ function readMappings(): MappingStore {
     return {};
   }
 }
-export function getSavedMapping(type: BronType): Record<string, string> | undefined {
-  return readMappings()[type];
+function mappingKey(type: BronType, klant?: string): string {
+  const k = (klant || "").trim().toLowerCase();
+  return k ? `${k}::${type}` : type;
 }
-export function saveMapping(type: BronType, mapping: Record<string, string>) {
+export function getSavedMapping(type: BronType, klant?: string): Record<string, string> | undefined {
   const s = readMappings();
-  s[type] = mapping;
+  return s[mappingKey(type, klant)] ?? (klant ? s[type] : undefined);
+}
+export function saveMapping(type: BronType, mapping: Record<string, string>, klant?: string) {
+  const s = readMappings();
+  s[mappingKey(type, klant)] = mapping;
   localStorage.setItem(MAPPING_KEY, JSON.stringify(s));
 }
 
-// ---- CSV parser (eenvoudig, ondersteunt , en ;) ----
+// ---- CSV parser-fouten ----
+export class CSVError extends Error {
+  code: "leeg" | "onleesbaar" | "delimiter";
+  constructor(code: "leeg" | "onleesbaar" | "delimiter", message: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
+// ---- CSV parser (eenvoudig, ondersteunt , ; en tab) ----
 export function parseCSV(text: string): { headers: string[]; rows: string[][] } {
-  // strip BOM
-  const clean = text.replace(/^\uFEFF/, "");
+  const clean = text.replace(/^\uFEFF/, "").trim();
+  if (clean.length === 0) {
+    throw new CSVError("leeg", "Dit bestand is leeg. Upload een bestand met gegevens.");
+  }
   const lines = clean.split(/\r?\n/).filter((l) => l.length > 0);
-  if (lines.length === 0) return { headers: [], rows: [] };
-  const sep = (lines[0].match(/;/g)?.length ?? 0) > (lines[0].match(/,/g)?.length ?? 0) ? ";" : ",";
+  if (lines.length === 0) {
+    throw new CSVError("leeg", "Dit bestand bevat geen leesbare regels.");
+  }
+  const semis = lines[0].match(/;/g)?.length ?? 0;
+  const commas = lines[0].match(/,/g)?.length ?? 0;
+  const tabs = lines[0].match(/\t/g)?.length ?? 0;
+  if (semis === 0 && commas === 0 && tabs === 0 && lines.length > 1) {
+    throw new CSVError(
+      "delimiter",
+      "We konden dit CSV-bestand niet goed lezen. Controleer het scheidingsteken (komma of puntkomma) en probeer opnieuw.",
+    );
+  }
+  const sep = tabs > Math.max(semis, commas) ? "\t" : semis > commas ? ";" : ",";
   const split = (line: string) => {
     const out: string[] = [];
     let cur = "";
@@ -146,8 +173,17 @@ export function parseCSV(text: string): { headers: string[]; rows: string[][] } 
     out.push(cur);
     return out.map((s) => s.trim());
   };
-  const headers = split(lines[0]);
-  const rows = lines.slice(1).map(split);
+  const headers = split(lines[0]).filter((h) => h.length > 0);
+  if (headers.length === 0) {
+    throw new CSVError("onleesbaar", "We konden geen kolomkoppen vinden. Controleer of de eerste regel kolomnamen bevat.");
+  }
+  if (headers.length === 1 && lines.length > 1) {
+    throw new CSVError(
+      "delimiter",
+      "We konden dit CSV-bestand niet goed lezen. Controleer het scheidingsteken (komma of puntkomma) en probeer opnieuw.",
+    );
+  }
+  const rows = lines.slice(1).map((l) => split(l));
   return { headers, rows };
 }
 
