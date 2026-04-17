@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getDossier } from "@/lib/dossiers";
+import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
 
 export default function DossierDetail() {
   const { id = "" } = useParams();
@@ -16,6 +17,8 @@ export default function DossierDetail() {
       </div>
     );
   }
+
+  const klaarVoorControle = hasMinimaleBronnen(d.id);
 
   const rows: Array<[string, string]> = [
     ["Bedrijfsnaam", d.bedrijfsnaam],
@@ -57,6 +60,31 @@ export default function DossierDetail() {
           <Button asChild>
             <Link to={`/dossiers/${d.id}/bronnen`}>Bronnen uploaden</Link>
           </Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Stap 3: Controle &amp; rapportage</CardTitle></CardHeader>
+        <CardContent className="flex items-center justify-between gap-4">
+          {klaarVoorControle ? (
+            <>
+              <p className="text-sm text-muted-foreground">
+                Bekijk de KPI's, de 8 kerncontroles en genereer de managementsamenvatting.
+              </p>
+              <div className="flex gap-2">
+                <Button asChild variant="outline">
+                  <Link to={`/dossiers/${d.id}/rapportage`}>Rapportage</Link>
+                </Button>
+                <Button asChild>
+                  <Link to={`/dossiers/${d.id}/controle`}>Controle-overzicht bekijken</Link>
+                </Button>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Voeg eerst minimaal zorgopbrengsten en personeelskosten toe om controles uit te voeren.
+            </p>
+          )}
         </CardContent>
       </Card>
 
