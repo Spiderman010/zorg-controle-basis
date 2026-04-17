@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/accordion";
 import { getDossier } from "@/lib/dossiers";
 import { buildDataset } from "@/lib/datasetBuilder";
-import { computeMetrics, runChecks, summarize, type CheckId, type CheckResult } from "@/core";
+import { computeMetrics, runChecks, runTrendChecksFromDataset, summarize, type CheckId, type CheckResult } from "@/core";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 
 const CHECK_CODES: Record<CheckId, string> = {
@@ -101,9 +101,10 @@ export default function DossierControle() {
     const { dataset } = buildDataset(d.id);
     const metrics = computeMetrics(dataset);
     const checks = runChecks(dataset);
+    const trends = runTrendChecksFromDataset(dataset);
     const summary = summarize(checks);
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, summary, byId };
+    return { dataset, metrics, checks, trends, summary, byId };
   }, [d]);
 
   if (!d) {
@@ -116,7 +117,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, summary, byId } = data;
+  const { metrics, checks, trends, summary, byId } = data;
   const m = metrics;
 
   const heeftBronnen = (data.dataset.revenue?.length ?? 0) > 0 || (data.dataset.payroll?.length ?? 0) > 0;
@@ -262,6 +263,47 @@ export default function DossierControle() {
             </Accordion>
           </CardContent>
         </Card>
+      </section>
+
+      {/* Aanvullende verbandscontroles (trend) */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Aanvullende verbandscontroles</h2>
+        <Card>
+          <CardContent className="p-0">
+            <Accordion type="multiple" className="w-full">
+              {trends.map((t) => (
+                <AccordionItem key={t.id} value={t.id} className="px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex flex-1 items-center gap-3 pr-4 text-left">
+                      <span className="w-16 shrink-0 font-mono text-xs text-muted-foreground">{t.code}</span>
+                      <span className="flex-1 text-sm font-medium">{t.label}</span>
+                      <span className="hidden text-xs text-muted-foreground md:inline">{t.message}</span>
+                      <StatusBadge status={t.status} />
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="space-y-2 pb-4 pl-20 pr-4 text-sm">
+                    <p className="text-muted-foreground">{t.message}</p>
+                    {t.details && (
+                      <dl className="grid grid-cols-1 gap-1 sm:grid-cols-2 text-xs">
+                        {Object.entries(t.details)
+                          .filter(([, v]) => v !== undefined)
+                          .map(([k, v]) => (
+                            <div key={k} className="font-mono">
+                              <span className="text-muted-foreground">{k}:</span>{" "}
+                              {typeof v === "number" ? fmtNum(v, 2) : v}
+                            </div>
+                          ))}
+                      </dl>
+                    )}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </CardContent>
+        </Card>
+        <p className="text-xs text-muted-foreground">
+          Trendcontroles vergelijken de laatste twee periodes en tellen niet mee in de score.
+        </p>
       </section>
     </div>
   );

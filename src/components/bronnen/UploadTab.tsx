@@ -8,6 +8,7 @@ import {
   BRON_LABELS,
   type BronBestand,
   type BronType,
+  CSVError,
   detectBronType,
   deleteBron,
   parseCSV,
@@ -214,10 +215,14 @@ function BestandsRij({
 
 async function importFile(dossierId: string, file: File, voorgesteldType?: BronType) {
   try {
+    if (file.size === 0) {
+      upsertBron(makeFout(dossierId, file.name, "Dit bestand is leeg. Upload een bestand met gegevens."));
+      return;
+    }
     const text = await file.text();
     const { headers, rows } = parseCSV(text);
     if (headers.length === 0) {
-      upsertBron(makeFout(dossierId, file.name, "Bestand is leeg of geen geldige CSV."));
+      upsertBron(makeFout(dossierId, file.name, "Bestand bevat geen kolomkoppen."));
       return;
     }
     const auto = voorgesteldType ?? detectBronType(file.name, headers);
@@ -229,13 +234,19 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
       geupload_op: new Date().toISOString(),
       type: auto ?? ("niet_gebruiken" as BronType),
       type_auto_herkend: !!auto && !isManueel,
-      type_bevestigd: isManueel, // automatisch geraden moet nog bevestigd worden
+      type_bevestigd: isManueel,
       headers,
       rijen: rows,
       preview_rows: Math.min(5, rows.length),
     });
   } catch (e) {
-    upsertBron(makeFout(dossierId, file.name, e instanceof Error ? e.message : "Onbekende fout bij inlezen."));
+    const msg =
+      e instanceof CSVError
+        ? e.message
+        : e instanceof Error
+        ? `We konden dit bestand niet lezen: ${e.message}`
+        : "Onbekende fout bij inlezen.";
+    upsertBron(makeFout(dossierId, file.name, msg));
   }
 }
 
