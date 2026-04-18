@@ -195,13 +195,39 @@ export default function DossierControle() {
         </div>
       </section>
 
+      {/* Hoofdscore */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Hoofdscore kerncontroles</h2>
+        <Card>
+          <CardContent className="space-y-2 p-4">
+            {summary.scorePercent === undefined ? (
+              <p className="text-sm">Nog geen uitvoerbare kerncontroles beschikbaar.</p>
+            ) : (
+              <>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-3xl font-semibold tabular-nums">{summary.scorePercent.toFixed(0)}%</span>
+                  <span className="text-xs text-muted-foreground">
+                    op basis van {summary.uitvoerbaar} van de {summary.total} kerncontroles
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {summary.groen} groen · {summary.oranje} oranje · {summary.rood} rood · {summary.grijs} grijs (telt niet mee)
+                </p>
+                <p className="font-mono text-xs text-muted-foreground">
+                  ({summary.groen} × 1 + {summary.oranje} × 0,5 + {summary.rood} × 0) / {summary.uitvoerbaar} ={" "}
+                  {summary.teller} / {summary.uitvoerbaar} = {summary.scorePercent.toFixed(1)}%
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Controles */}
       <section className="space-y-3">
         <div className="flex items-end justify-between">
           <h2 className="text-sm font-medium text-muted-foreground">Kerncontroles</h2>
           <p className="text-xs text-muted-foreground">
-            Score: {summary.score === undefined ? "—" : `${(summary.score * 100).toFixed(0)}%`}
-            {" · "}
             {summary.groen} groen · {summary.oranje} oranje · {summary.rood} rood · {summary.grijs} grijs (telt niet mee)
           </p>
         </div>
