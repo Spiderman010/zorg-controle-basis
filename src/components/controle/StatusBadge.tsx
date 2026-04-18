@@ -18,8 +18,9 @@ const LABELS: Record<CheckStatus, string> = {
 export function StatusBadge({ status, className }: { status: CheckStatus; className?: string }) {
   return (
     <span
+      data-status={LABELS[status]}
       className={cn(
-        "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
+        "status-badge inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium",
         STYLES[status],
         className,
       )}

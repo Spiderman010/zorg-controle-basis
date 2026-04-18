@@ -165,22 +165,36 @@ export default function DossierRapportage() {
   const { metrics: m, checks, trends } = data;
   const c = bouwConclusie(checks, trends);
 
+  const exportDatum = new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date());
+
   return (
-    <div className="space-y-6">
-      <header className="flex items-end justify-between gap-4">
+    <div className="space-y-6 print-area">
+      <header className="flex items-end justify-between gap-4 print-hidden">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Managementsamenvatting</h1>
           <p className="text-sm text-muted-foreground">
             {d.bedrijfsnaam} · {d.dossiernaam} · {d.periode_van} t/m {d.periode_tot}
           </p>
         </div>
-        <div className="flex gap-2 print:hidden">
+        <div className="flex gap-2">
           <Button asChild variant="outline"><Link to={`/dossiers/${d.id}/controle`}>Naar controle-overzicht</Link></Button>
-          <Button onClick={() => window.print()}>Afdrukken</Button>
+          <Button onClick={() => window.print()}>Afdrukken / Opslaan als PDF</Button>
         </div>
       </header>
 
-      <Card>
+      {/* Compacte rapportkop — alleen zichtbaar in print */}
+      <div className="print-only mb-4 border-b pb-3">
+        <div className="text-xs uppercase tracking-wide">Managementsamenvatting Zorg Controle Basis</div>
+        <div className="mt-1 flex items-baseline justify-between gap-4">
+          <div>
+            <div className="text-base font-semibold">{d.bedrijfsnaam}</div>
+            <div className="text-xs">{d.dossiernaam} · periode {d.periode_van} t/m {d.periode_tot}</div>
+          </div>
+          <div className="text-xs">Datum export: {exportDatum}</div>
+        </div>
+      </div>
+
+      <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Conclusie</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-sm">
           <p className="font-medium">{c.conclusie}</p>
@@ -188,7 +202,7 @@ export default function DossierRapportage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Kerncijfers</CardTitle></CardHeader>
         <CardContent>
           <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
@@ -212,7 +226,7 @@ export default function DossierRapportage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Status per kerncontrole</CardTitle></CardHeader>
         <CardContent>
           <ul className="divide-y">
@@ -228,7 +242,7 @@ export default function DossierRapportage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Aanvullende verbandscontroles</CardTitle></CardHeader>
         <CardContent>
           <ul className="divide-y">
@@ -244,7 +258,7 @@ export default function DossierRapportage() {
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Belangrijkste bevindingen</CardTitle></CardHeader>
         <CardContent>
           <ul className="space-y-2 text-sm">
@@ -259,7 +273,7 @@ export default function DossierRapportage() {
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <Card>
+        <Card className="print-card">
           <CardHeader><CardTitle className="text-base">Top-risico's</CardTitle></CardHeader>
           <CardContent className="text-sm">
             {c.risicos.length === 0 ? (
@@ -270,7 +284,7 @@ export default function DossierRapportage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="print-card">
           <CardHeader><CardTitle className="text-base">Verbeterpunten</CardTitle></CardHeader>
           <CardContent className="text-sm">
             {c.verbeterpunten.length === 0 ? (
@@ -281,6 +295,9 @@ export default function DossierRapportage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Paginanummer-footer — alleen in print zichtbaar via @page counter */}
+      <div className="print-footer print-only" aria-hidden />
     </div>
   );
 }
