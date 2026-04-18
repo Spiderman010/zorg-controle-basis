@@ -194,20 +194,67 @@ export function runChecks(ds: Dataset): CheckResult[] {
   return results;
 }
 
+/** De 8 kerncontroles die meetellen in de hoofdscore. Trendcontroles tellen niet mee. */
+export const CORE_CHECK_IDS: CheckId[] = [
+  "revenue_reconciliation",
+  "payroll_reconciliation",
+  "external_hire_reconciliation",
+  "personnel_cost_ratio",
+  "paid_hours_reconciliation",
+  "direct_hours_ratio",
+  "non_productive_hours_ratio",
+  "remaining_hours_analysis",
+];
+
+/** Gewichten per status. Grijs telt niet mee. */
+export const SCORE_WEIGHTS = { groen: 1, oranje: 0.5, rood: 0 } as const;
+
+export const SCORE_FORMULE =
+  "score = (groen × 1 + oranje × 0,5 + rood × 0) / (groen + oranje + rood); grijs telt niet mee";
+
 export interface ScoreSummary {
+  /** Totaal aantal controles in input */
   total: number;
   groen: number;
   oranje: number;
   rood: number;
   grijs: number;
-  /** Score 0-1 op niet-grijze controles: groen=1, oranje=0.5, rood=0 */
+  /** Aantal uitvoerbare controles (groen+oranje+rood) — noemer van de score */
+  uitvoerbaar: number;
+  /** Teller: groen × 1 + oranje × 0,5 + rood × 0 */
+  teller: number;
+  /** Score 0-1 op uitvoerbare controles. undefined als er geen uitvoerbare zijn. */
   score?: number;
+  /** Score in procenten (0-100). undefined als er geen uitvoerbare zijn. */
+  scorePercent?: number;
+  /** Menselijk leesbare formule */
+  formule: string;
 }
 
+/**
+ * Bereken de hoofdscore.
+ * - groen = 1, oranje = 0,5, rood = 0
+ * - grijs telt niet mee in teller of noemer
+ * - input wordt gefilterd op kerncontroles; trendcontroles tellen niet mee
+ */
 export function summarize(results: CheckResult[]): ScoreSummary {
+  const coreSet = new Set<string>(CORE_CHECK_IDS);
+  const core = results.filter((r) => coreSet.has(r.id));
   const counts = { groen: 0, oranje: 0, rood: 0, grijs: 0 };
-  for (const r of results) counts[r.status]++;
-  const scored = counts.groen + counts.oranje + counts.rood;
-  const score = scored === 0 ? undefined : (counts.groen + 0.5 * counts.oranje) / scored;
-  return { total: results.length, ...counts, score };
+  for (const r of core) counts[r.status]++;
+  const uitvoerbaar = counts.groen + counts.oranje + counts.rood;
+  const teller =
+    counts.groen * SCORE_WEIGHTS.groen +
+    counts.oranje * SCORE_WEIGHTS.oranje +
+    counts.rood * SCORE_WEIGHTS.rood;
+  const score = uitvoerbaar === 0 ? undefined : teller / uitvoerbaar;
+  return {
+    total: core.length,
+    ...counts,
+    uitvoerbaar,
+    teller,
+    score,
+    scorePercent: score === undefined ? undefined : score * 100,
+    formule: SCORE_FORMULE,
+  };
 }
