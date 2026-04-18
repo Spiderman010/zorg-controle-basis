@@ -126,24 +126,54 @@ const Index = () => {
       </section>
 
       <section className="mb-8">
-        <h2 className="text-lg font-bold mb-2">Controles ({score.total}) — score: {score.score !== undefined ? (score.score * 100).toFixed(0) + "%" : "n.v.t."}</h2>
-        <p className="mb-1 opacity-70">groen: {score.groen} · oranje: {score.oranje} · rood: {score.rood} · grijs: {score.grijs} (niet meegerekend)</p>
-        <p className="mb-3 opacity-60 text-xs">
-          Formule: score = (groen × 1 + oranje × 0,5 + rood × 0) / (groen + oranje + rood)
-          {" = "}({score.groen} + 0,5 × {score.oranje} + 0 × {score.rood}) / {score.groen + score.oranje + score.rood}
-          {score.score !== undefined && ` = ${score.score.toFixed(3)} → ${(score.score * 100).toFixed(0)}%`}
-          . Grijze controles ({score.grijs}) tellen niet mee.
-        </p>
+        <h2 className="text-lg font-bold mb-2">
+          Hoofdscore kerncontroles —{" "}
+          {score.scorePercent === undefined ? "n.v.t." : `${score.scorePercent.toFixed(0)}%`}
+        </h2>
+        <div className="p-4 rounded mb-3" style={{ background: "#111827" }}>
+          <div className="text-xs opacity-80 space-y-1">
+            <div><span className="opacity-60">Aantal kerncontroles totaal:</span> {score.total}</div>
+            <div><span className="opacity-60">Aantal uitvoerbare kerncontroles:</span> {score.uitvoerbaar} (telt mee)</div>
+            <div><span className="opacity-60">Niet uitvoerbaar (grijs, telt niet mee):</span> {score.grijs}</div>
+            <div className="pt-1">
+              <span className="opacity-60">Verdeling:</span>{" "}
+              <span style={{ color: STATUS_COLOR.groen }}>● {score.groen} groen</span>{" · "}
+              <span style={{ color: STATUS_COLOR.oranje }}>● {score.oranje} oranje</span>{" · "}
+              <span style={{ color: STATUS_COLOR.rood }}>● {score.rood} rood</span>{" · "}
+              <span style={{ color: STATUS_COLOR.grijs }}>● {score.grijs} grijs</span>
+            </div>
+            <div className="pt-2"><span className="opacity-60">Scoreformule:</span> {score.formule}</div>
+            <div>
+              <span className="opacity-60">Tussenstap:</span>{" "}
+              ({score.groen} × 1 + {score.oranje} × 0,5 + {score.rood} × 0) / {score.uitvoerbaar} ={" "}
+              {score.teller} / {score.uitvoerbaar} ={" "}
+              {score.score === undefined
+                ? "n.v.t. (geen uitvoerbare kerncontroles)"
+                : `${score.score.toFixed(4)} → ${score.scorePercent!.toFixed(1)}%`}
+            </div>
+            <div className="opacity-60 pt-1">Aanvullende trendcontroles tellen niet mee in deze score.</div>
+          </div>
+        </div>
+        <h3 className="text-sm font-bold mb-2 opacity-80">Welke controles tellen mee?</h3>
         <ul className="space-y-2">
-          {results.map((r) => (
-            <li key={r.id} className="p-3 rounded flex items-start gap-3" style={{ background: "#111827" }}>
-              <span className="inline-block w-3 h-3 rounded-full mt-1.5" style={{ background: STATUS_COLOR[r.status] }} />
-              <div className="flex-1">
-                <div className="font-bold">{r.label} <span className="opacity-60">[{r.status}]</span></div>
-                <div className="opacity-80">{r.message}</div>
-              </div>
-            </li>
-          ))}
+          {results.map((r) => {
+            const meetelt = r.status !== "grijs";
+            const gewicht = r.status === "groen" ? "1" : r.status === "oranje" ? "0,5" : "0";
+            return (
+              <li key={r.id} className="p-3 rounded flex items-start gap-3" style={{ background: "#111827" }}>
+                <span className="inline-block w-3 h-3 rounded-full mt-1.5" style={{ background: STATUS_COLOR[r.status] }} />
+                <div className="flex-1">
+                  <div className="font-bold">
+                    {r.label} <span className="opacity-60">[{r.status}]</span>{" "}
+                    <span className="opacity-60 text-xs">
+                      {meetelt ? `→ telt mee (gewicht ${gewicht})` : "→ telt niet mee"}
+                    </span>
+                  </div>
+                  <div className="opacity-80">{r.message}</div>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
