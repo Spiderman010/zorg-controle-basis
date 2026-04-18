@@ -121,6 +121,12 @@ All colors MUST be HSL.
   @page {
     size: A4;
     margin: 18mm 16mm 22mm 16mm;
+
+    @bottom-center {
+      content: "Pagina " counter(page);
+      font-size: 9pt;
+      color: #555;
+    }
   }
 
   html, body {
@@ -187,18 +193,10 @@ All colors MUST be HSL.
     font-weight: 600;
   }
 
-  /* Paginanummers */
+  /* Paginanummering wordt verzorgd door @page @bottom-center hierboven.
+     De .print-footer in de DOM blijft leeg en onzichtbaar als fallback. */
   .print-footer {
-    position: fixed;
-    bottom: 6mm;
-    left: 0;
-    right: 0;
-    text-align: center;
-    font-size: 9pt;
-    color: #555;
-  }
-  .print-footer::after {
-    content: "Pagina " counter(page) " van " counter(pages);
+    display: none !important;
   }
 }
 
