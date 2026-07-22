@@ -10,7 +10,16 @@ import {
 } from "@/components/ui/accordion";
 import { getDossier } from "@/lib/dossiers";
 import { buildDataset } from "@/lib/datasetBuilder";
-import { computeMetrics, runChecks, runTrendChecksFromDataset, summarize, type CheckId, type CheckResult } from "@/core";
+import {
+  computeMetrics,
+  computeFinancieringsMix,
+  financieringsSignaal,
+  runChecks,
+  runTrendChecksFromDataset,
+  summarize,
+  type CheckId,
+  type CheckResult,
+} from "@/core";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 
 const CHECK_CODES: Record<CheckId, string> = {
@@ -103,8 +112,10 @@ export default function DossierControle() {
     const checks = runChecks(dataset);
     const trends = runTrendChecksFromDataset(dataset);
     const summary = summarize(checks);
+    const mix = computeFinancieringsMix(dataset);
+    const mixSignaal = financieringsSignaal(mix);
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, byId };
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, byId };
   }, [d]);
 
   if (!d) {
@@ -117,7 +128,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, byId } = data;
   const m = metrics;
 
   const heeftBronnen = (data.dataset.revenue?.length ?? 0) > 0 || (data.dataset.payroll?.length ?? 0) > 0;
@@ -193,6 +204,50 @@ export default function DossierControle() {
             hint="Resturen × gemiddeld uurloon."
           />
         </div>
+      </section>
+
+      {/* Financieringsmix */}
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">Financieringsmix</h2>
+        <Card>
+          <CardContent className="space-y-4 p-4">
+            {mix.entries.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Geen zorgopbrengsten beschikbaar.</p>
+            ) : (
+              <>
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                  {mix.entries.map((e) =>
+                    e.share !== undefined && e.share > 0 ? (
+                      <div
+                        key={e.stroom}
+                        className={e.stroom === "onbekend" ? "bg-muted-foreground/30" : "bg-primary/80 [&:nth-child(even)]:bg-primary/50"}
+                        style={{ width: `${(e.share * 100).toFixed(2)}%` }}
+                        title={`${e.label}: ${fmtPct(e.share)}`}
+                      />
+                    ) : null,
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                  {mix.entries.map((e) => (
+                    <div key={e.stroom} className="rounded-md border p-2">
+                      <p className="text-xs uppercase tracking-wide text-muted-foreground">{e.label}</p>
+                      <p className="text-sm font-semibold tabular-nums">{fmtEUR(e.amount)}</p>
+                      <p className="text-xs tabular-nums text-muted-foreground">{fmtPct(e.share)}</p>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <div className="flex items-start gap-3 border-t pt-3">
+              <StatusBadge status={mixSignaal.status} />
+              <div className="text-sm">
+                <p className="font-medium">Signaal: meerdere wettelijke kaders</p>
+                <p className="text-muted-foreground">{mixSignaal.message}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Informatief signaal — telt niet mee in de hoofdscore.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </section>
 
       {/* Hoofdscore */}

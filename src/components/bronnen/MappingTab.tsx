@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   BRON_LABELS,
   VERPLICHTE_VELDEN,
+  OPTIONELE_VELDEN,
   type BronBestand,
   type BronType,
   getSavedMapping,
@@ -13,6 +14,9 @@ import {
   suggestMapping,
   upsertBron,
 } from "@/lib/bronnen";
+
+/** Sentinel voor "geen kolom gekozen" bij optionele velden (Radix Select staat geen lege waarde toe). */
+const GEEN_KOLOM = "__geen__";
 
 interface Props {
   bronnen: BronBestand[];
@@ -49,6 +53,7 @@ function MappingKaart({
 }) {
   const type = bron.type as Exclude<BronType, "niet_gebruiken">;
   const verplicht = VERPLICHTE_VELDEN[type];
+  const optioneel = OPTIONELE_VELDEN[type] ?? [];
   const initial = bron.mapping && Object.keys(bron.mapping).length > 0
     ? bron.mapping
     : suggestMapping(type, bron.headers);
@@ -71,7 +76,9 @@ function MappingKaart({
     opgeslagen && JSON.stringify(opgeslagen) !== JSON.stringify(mapping);
 
   const update = (veld: string, header: string) => {
-    const next = { ...mapping, [veld]: header };
+    const next = { ...mapping };
+    if (header === GEEN_KOLOM) delete next[veld];
+    else next[veld] = header;
     setMapping(next);
     upsertBron({ ...bron, mapping: next });
     onChange();
@@ -154,6 +161,29 @@ function MappingKaart({
                 </div>
               ))}
             </div>
+            {optioneel.length > 0 && (
+              <>
+                <h4 className="mb-2 mt-4 text-xs font-medium uppercase text-muted-foreground">Optionele velden</h4>
+                <div className="space-y-3">
+                  {optioneel.map((v) => (
+                    <div key={v} className="flex items-center gap-3">
+                      <span className="w-48 text-sm">{v} <span className="text-xs text-muted-foreground">(optioneel)</span></span>
+                      <Select value={mapping[v] || GEEN_KOLOM} onValueChange={(val) => update(v, val)}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Geen kolom" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={GEEN_KOLOM}>Geen kolom (automatisch herkennen)</SelectItem>
+                          {bron.headers.map((h) => (
+                            <SelectItem key={h} value={h}>{h}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </CardContent>

@@ -8,6 +8,7 @@ import type {
   DirectHoursRecord,
   NonProductiveHoursRecord,
 } from "@/core";
+import { normalizeStroom, detectStroom } from "@/core";
 import { listBronnen, type BronBestand, type BronType } from "@/lib/bronnen";
 
 /** Parse Nederlands of internationaal getal naar number; NaN als ongeldig. */
@@ -54,14 +55,18 @@ export function buildDataset(dossier_id: string): { dataset: Dataset; bronnen: B
         if (cls && cls !== "meetellen") return;
         const amount = parseNumber(colVal(b, row, "bedrag"));
         if (!Number.isFinite(amount)) return;
+        const rekening = colVal(b, row, "rekening_of_categorie") || "";
+        // Stroom: expliciet gemapte kolom heeft voorrang, anders herkenning uit rekeningnaam.
+        const stroom =
+          normalizeStroom(colVal(b, row, "financieringsstroom")) ?? detectStroom(rekening) ?? "onbekend";
         rec.push({
           dossier_id,
           period: colVal(b, row, "periode") || "",
           source_file: b.bestandsnaam,
           import_status: "valid",
-          account_code: colVal(b, row, "rekening_of_categorie") || "",
-          account_name: colVal(b, row, "rekening_of_categorie") || "",
-          revenue_type: "onbekend",
+          account_code: rekening,
+          account_name: rekening,
+          revenue_type: stroom,
           amount,
         });
       });

@@ -38,6 +38,11 @@ export const VERPLICHTE_VELDEN: Record<Exclude<BronType, "niet_gebruiken">, stri
   niet_productieve_uren: ["periode", "medewerker", "uren"],
 };
 
+/** Optionele velden per brontype: mogen leeg blijven, mapping-UI toont ze als "(optioneel)". */
+export const OPTIONELE_VELDEN: Partial<Record<Exclude<BronType, "niet_gebruiken">, string[]>> = {
+  zorgopbrengsten: ["financieringsstroom"],
+};
+
 export type ClassificatieZorg = "meetellen" | "niet_meetellen" | "twijfel";
 export type ClassificatieInhuur = "zorginhuur" | "overige_inkoop" | "twijfel";
 export type ClassificatieActiviteit = "direct" | "niet_productief" | "onbekend";
@@ -213,11 +218,12 @@ const VELD_SYNONIEMEN: Record<string, string[]> = {
   betaalde_uren: ["betaalde", "verloond", "loonuren", "uren"],
   directe_uren: ["direct", "declarab", "cliëntgebonden", "clientgebonden", "uren"],
   uren: ["uren", "hours"],
+  financieringsstroom: ["financieringsstroom", "stroom", "kader", "wet", "financier", "geldstroom", "regeling"],
 };
 
 export function suggestMapping(type: Exclude<BronType, "niet_gebruiken">, headers: string[]): Record<string, string> {
   const result: Record<string, string> = {};
-  for (const veld of VERPLICHTE_VELDEN[type]) {
+  for (const veld of [...VERPLICHTE_VELDEN[type], ...(OPTIONELE_VELDEN[type] ?? [])]) {
     const syns = VELD_SYNONIEMEN[veld] || [veld];
     const match = headers.find((h) => syns.some((s) => h.toLowerCase().includes(s)));
     if (match) result[veld] = match;
