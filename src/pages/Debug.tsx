@@ -7,6 +7,7 @@ import {
   runTrendChecks,
   type Dataset,
 } from "@/core";
+import { StorageDiagnose } from "@/components/debug/StorageDiagnose";
 
 const sample: Dataset = {
   revenue: [
