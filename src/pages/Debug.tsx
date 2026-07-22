@@ -7,6 +7,7 @@ import {
   runTrendChecks,
   type Dataset,
 } from "@/core";
+import { StorageDiagnose } from "@/components/debug/StorageDiagnose";
 
 const sample: Dataset = {
   revenue: [
@@ -119,6 +120,12 @@ const Index = () => {
     <main className="min-h-screen p-8 font-mono text-sm" style={{ background: "#0b0f17", color: "#e5e7eb" }}>
       <h1 className="text-2xl mb-1 font-bold">Zorg Controle Basis — rekenkern</h1>
       <p className="mb-6 opacity-70">Demo-output op een ingebouwde voorbeelddataset. Tests: <code>npx vitest run</code></p>
+
+      <section className="mb-8 font-sans text-foreground">
+        <div className="rounded bg-background p-1">
+          <StorageDiagnose />
+        </div>
+      </section>
 
       <section className="mb-8">
         <h2 className="text-lg font-bold mb-2">Berekende waarden</h2>
