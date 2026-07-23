@@ -1,5 +1,5 @@
 // Aanvullende verbandscontroles (trend) — vergelijken huidige periode met vorige periode.
-// Verandert de bestaande 8 kerncontroles niet.
+// Verandert de bestaande kerncontroles niet.
 
 import type { Dataset, CheckStatus } from "./types";
 import { computeTotals } from "./calculations";

@@ -111,6 +111,6 @@ describe("financieringsSignaal", () => {
     const ds: Dataset = { revenue: [rev(100, "wlz"), rev(100, "wmo")] };
     const zonderMix = summarize(runChecks(ds));
     // Het signaal staat buiten runChecks; de score-invoer verandert dus niet.
-    expect(zonderMix.total).toBe(8);
+    expect(zonderMix.total).toBe(9);
   });
 });

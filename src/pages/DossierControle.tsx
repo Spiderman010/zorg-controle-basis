@@ -14,6 +14,7 @@ import {
   computeMetrics,
   computeFinancieringsMix,
   computeProjectAnalyse,
+  computeSollOmzet,
   financieringsSignaal,
   runChecks,
   runTrendChecksFromDataset,
@@ -34,6 +35,7 @@ const CHECK_CODES: Record<CheckId, string> = {
   direct_hours_ratio: "V1-C06",
   non_productive_hours_ratio: "V1-C07",
   remaining_hours_analysis: "V1-C08",
+  soll_omzet_check: "V1-C09",
 };
 
 const CHECK_FORMULES: Record<CheckId, string> = {
@@ -45,6 +47,7 @@ const CHECK_FORMULES: Record<CheckId, string> = {
   direct_hours_ratio: "directe uren / betaalde uren",
   non_productive_hours_ratio: "niet-productieve uren / betaalde uren",
   remaining_hours_analysis: "(betaalde − direct − niet-productief) / betaalde",
+  soll_omzet_check: "(omzet − directe uren × tarief) / (directe uren × tarief)",
 };
 
 const CHECK_BRONNEN: Record<CheckId, string> = {
@@ -56,6 +59,7 @@ const CHECK_BRONNEN: Record<CheckId, string> = {
   direct_hours_ratio: "Betaalde uren, directe uren",
   non_productive_hours_ratio: "Betaalde uren, niet-productieve uren",
   remaining_hours_analysis: "Betaalde, directe en niet-productieve uren",
+  soll_omzet_check: "Zorgopbrengsten, directe uren, tarieven (projecten/standaard)",
 };
 
 const CHECK_VERVOLG: Record<CheckId, string> = {
@@ -67,6 +71,7 @@ const CHECK_VERVOLG: Record<CheckId, string> = {
   direct_hours_ratio: "Analyseer urenregistratie en cliëntplanning.",
   non_productive_hours_ratio: "Bekijk verzuim, verlof en scholing.",
   remaining_hours_analysis: "Onderzoek niet-toegewezen uren en hun kosten.",
+  soll_omzet_check: "Onderzoek tariefverschillen, niet-gedeclareerde uren of omzet zonder uren.",
 };
 
 function fmtEUR(n: number | undefined) {
@@ -112,15 +117,17 @@ export default function DossierControle() {
     if (!d) return null;
     const { dataset } = buildDataset(d.id);
     const metrics = computeMetrics(dataset);
-    const checks = runChecks(dataset);
+    const projecten = listProjecten(d.id);
+    const sollConfig = { projecten, standaard_tarief: d.standaard_tarief };
+    const checks = runChecks(dataset, { soll: sollConfig });
     const trends = runTrendChecksFromDataset(dataset);
     const summary = summarize(checks);
     const mix = computeFinancieringsMix(dataset);
     const mixSignaal = financieringsSignaal(mix);
-    const projecten = listProjecten(d.id);
     const projectAnalyse = projecten.length > 0 ? computeProjectAnalyse(dataset, projecten) : [];
+    const soll = computeSollOmzet(dataset, sollConfig);
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, byId };
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, byId };
   }, [d]);
 
   if (!d) {
@@ -133,7 +140,9 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, soll, byId } = data;
+  const sollPerProject = Object.fromEntries(soll.regels.map((r) => [r.project_id, r]));
+  const toonSoll = soll.regels.some((r) => r.tarief !== undefined);
   const m = metrics;
 
   const heeftBronnen = (data.dataset.revenue?.length ?? 0) > 0 || (data.dataset.payroll?.length ?? 0) > 0;
@@ -272,6 +281,13 @@ export default function DossierControle() {
                       <th className="px-4 py-2 text-right">Directe uren</th>
                       <th className="px-4 py-2 text-right">Aandeel uren</th>
                       <th className="px-4 py-2 text-right">Opbrengst per uur</th>
+                      {toonSoll && (
+                        <>
+                          <th className="px-4 py-2 text-right">Tarief</th>
+                          <th className="px-4 py-2 text-right">Soll-omzet</th>
+                          <th className="px-4 py-2 text-right">Afwijking</th>
+                        </>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
@@ -289,6 +305,13 @@ export default function DossierControle() {
                         <td className="px-4 py-2 text-right tabular-nums">{fmtNum(p.direct_hours, 1)}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{fmtPct(p.direct_hours_share)}</td>
                         <td className="px-4 py-2 text-right tabular-nums">{fmtEUR(p.revenue_per_direct_hour)}</td>
+                        {toonSoll && (
+                          <>
+                            <td className="px-4 py-2 text-right tabular-nums">{fmtEUR(sollPerProject[p.project_id]?.tarief)}</td>
+                            <td className="px-4 py-2 text-right tabular-nums">{fmtEUR(sollPerProject[p.project_id]?.soll)}</td>
+                            <td className="px-4 py-2 text-right tabular-nums">{fmtPct(sollPerProject[p.project_id]?.afwijking)}</td>
+                          </>
+                        )}
                       </tr>
                     ))}
                   </tbody>
@@ -368,7 +391,7 @@ export default function DossierControle() {
                         <dd className="tabular-nums">
                           {c.value === undefined
                             ? "—"
-                            : c.id.endsWith("_ratio")
+                            : c.id.endsWith("_ratio") || c.id === "soll_omzet_check"
                             ? fmtPct(c.value)
                             : fmtNum(c.value, 2)}
                         </dd>

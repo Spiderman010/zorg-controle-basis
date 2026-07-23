@@ -15,6 +15,8 @@ export interface Dossier {
   controle_type: ControleType;
   status: DossierStatus;
   aangemaakt_op: string; // ISO
+  /** Terugval-uurtarief voor de soll-omzetcontrole (projecten zonder eigen tarief en "Algemeen"). */
+  standaard_tarief?: number;
 }
 
 const KEY = "zcb.dossiers.v1";
@@ -44,6 +46,11 @@ export function saveDossier(input: Omit<Dossier, "id" | "status" | "aangemaakt_o
   all.unshift(dossier);
   localStorage.setItem(KEY, JSON.stringify(all));
   return dossier;
+}
+
+export function updateDossier(id: string, patch: Partial<Pick<Dossier, "status" | "standaard_tarief">>) {
+  const all = listDossiers().map((d) => (d.id === id ? { ...d, ...patch } : d));
+  localStorage.setItem(KEY, JSON.stringify(all));
 }
 
 export function formatPeriode(d: Dossier): string {

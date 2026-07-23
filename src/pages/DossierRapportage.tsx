@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getDossier } from "@/lib/dossiers";
 import { buildDataset } from "@/lib/datasetBuilder";
+import { listProjecten } from "@/lib/projecten";
 import {
   computeMetrics,
   runChecks,
@@ -24,6 +25,7 @@ const CHECK_CODES: Record<CheckId, string> = {
   direct_hours_ratio: "V1-C06",
   non_productive_hours_ratio: "V1-C07",
   remaining_hours_analysis: "V1-C08",
+  soll_omzet_check: "V1-C09",
 };
 
 function fmtEUR(n: number | undefined) {
@@ -53,9 +55,15 @@ function bouwConclusie(checks: CheckResult[], trends: TrendCheckResult[]): Concl
     ...trends.map((t) => ({ code: t.code, status: t.status, label: t.label, message: t.message })),
   ];
 
-  const totaalKern = checks.length;
-  const uitvoerbaarKern = checks.filter((c) => c.status !== "grijs").length;
-  const grijzeKern = checks.filter((c) => c.status === "grijs");
+  // V1-C09 telt pas mee in de betrouwbaarheid zodra er tarieven zijn ingevoerd:
+  // een ontbrekend tarief is een keuze, geen ontbrekende bron, en mag bestaande
+  // dossiers niet degraderen.
+  const betrKern = checks.filter(
+    (c) => !(c.id === "soll_omzet_check" && c.status === "grijs" && c.message.includes("uurtarief ontbreekt")),
+  );
+  const totaalKern = betrKern.length;
+  const uitvoerbaarKern = betrKern.filter((c) => c.status !== "grijs").length;
+  const grijzeKern = betrKern.filter((c) => c.status === "grijs");
   const rood = all.filter((c) => c.status === "rood");
   const oranje = all.filter((c) => c.status === "oranje");
   const grijsAll = all.filter((c) => c.status === "grijs");
@@ -127,7 +135,7 @@ export default function DossierRapportage() {
     return {
       dataset,
       metrics: computeMetrics(dataset),
-      checks: runChecks(dataset),
+      checks: runChecks(dataset, { soll: { projecten: listProjecten(d.id), standaard_tarief: d.standaard_tarief } }),
       trends: runTrendChecksFromDataset(dataset),
     };
   }, [d]);

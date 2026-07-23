@@ -1,5 +1,11 @@
 import type { Dataset, CheckResult, CheckStatus, CheckId } from "./types";
 import { computeMetrics } from "./calculations";
+import { sollOmzetCheck, type SollOmzetConfig } from "./sollomzet";
+
+export interface RunChecksOptions {
+  /** Configuratie voor de soll-omzetcontrole (V1-C09); zonder tarieven wordt die grijs. */
+  soll?: SollOmzetConfig;
+}
 
 const GREY_MSG = (source: string) => `Niet uitvoerbaar – ${source} ontbreekt`;
 
@@ -50,7 +56,7 @@ function reconciliation(
   };
 }
 
-export function runChecks(ds: Dataset): CheckResult[] {
+export function runChecks(ds: Dataset, opts?: RunChecksOptions): CheckResult[] {
   const m = computeMetrics(ds);
   const sec = ds.secondary_totals ?? {};
 
@@ -191,10 +197,13 @@ export function runChecks(ds: Dataset): CheckResult[] {
     });
   }
 
+  // 9. Soll-omzet: directe uren × tarief vs verantwoorde omzet (grijs zonder dekkend tarief)
+  results.push(sollOmzetCheck(ds, opts?.soll ?? {}));
+
   return results;
 }
 
-/** De 8 kerncontroles die meetellen in de hoofdscore. Trendcontroles tellen niet mee. */
+/** De 9 kerncontroles die meetellen in de hoofdscore. Trendcontroles tellen niet mee. */
 export const CORE_CHECK_IDS: CheckId[] = [
   "revenue_reconciliation",
   "payroll_reconciliation",
@@ -204,6 +213,7 @@ export const CORE_CHECK_IDS: CheckId[] = [
   "direct_hours_ratio",
   "non_productive_hours_ratio",
   "remaining_hours_analysis",
+  "soll_omzet_check",
 ];
 
 /** Gewichten per status. Grijs telt niet mee. */

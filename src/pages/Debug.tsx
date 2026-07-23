@@ -100,7 +100,8 @@ const STATUS_COLOR: Record<string, string> = {
 const Index = () => {
   const metrics = useMemo(() => computeMetrics(sample), []);
   const issues = useMemo(() => validateDataset(sample), []);
-  const results = useMemo(() => runChecks(sample), []);
+  // Standaardtarief zodat V1-C09 (soll-omzet) in de demo uitvoerbaar is.
+  const results = useMemo(() => runChecks(sample, { soll: { standaard_tarief: 140 } }), []);
   const score = useMemo(() => summarize(results), [results]);
   const trendOutputs = useMemo(
     () =>

@@ -1,8 +1,8 @@
 // Client-side opslag voor projecten per dossier (Fase B).
 // Later vervangen door Lovable Cloud.
-import type { Financieringsstroom, ProjectDef } from "@/core";
+import type { Financieringsstroom, ProjectDefMetTarief } from "@/core";
 
-export interface Project extends ProjectDef {
+export interface Project extends ProjectDefMetTarief {
   dossier_id: string;
   aangemaakt_op: string; // ISO
 }
@@ -25,16 +25,26 @@ export function listProjecten(dossier_id: string): Project[] {
   return read().filter((p) => p.dossier_id === dossier_id);
 }
 
-export function addProject(dossier_id: string, naam: string, stroom?: Financieringsstroom): Project {
+export function addProject(
+  dossier_id: string,
+  naam: string,
+  stroom?: Financieringsstroom,
+  tarief?: number,
+): Project {
   const project: Project = {
     id: crypto.randomUUID(),
     dossier_id,
     naam: naam.trim(),
     stroom,
+    tarief,
     aangemaakt_op: new Date().toISOString(),
   };
   write([...read(), project]);
   return project;
+}
+
+export function updateProject(id: string, patch: Partial<Pick<Project, "naam" | "stroom" | "tarief">>) {
+  write(read().map((p) => (p.id === id ? { ...p, ...patch } : p)));
 }
 
 export function deleteProject(id: string) {

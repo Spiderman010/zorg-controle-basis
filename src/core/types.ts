@@ -96,7 +96,8 @@ export type CheckId =
   | "paid_hours_reconciliation"
   | "direct_hours_ratio"
   | "non_productive_hours_ratio"
-  | "remaining_hours_analysis";
+  | "remaining_hours_analysis"
+  | "soll_omzet_check";
 
 export interface CheckResult {
   id: CheckId;

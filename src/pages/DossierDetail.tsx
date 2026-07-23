@@ -52,7 +52,7 @@ export default function DossierDetail() {
         </CardContent>
       </Card>
 
-      <ProjectenBeheer dossierId={d.id} />
+      <ProjectenBeheer key={d.id} dossierId={d.id} />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Stap 2: Bronnen</CardTitle></CardHeader>
@@ -72,7 +72,7 @@ export default function DossierDetail() {
           {klaarVoorControle ? (
             <>
               <p className="text-sm text-muted-foreground">
-                Bekijk de KPI's, de 8 kerncontroles en genereer de managementsamenvatting.
+                Bekijk de KPI's, de kerncontroles en genereer de managementsamenvatting.
               </p>
               <div className="flex gap-2">
                 <Button asChild variant="outline">
