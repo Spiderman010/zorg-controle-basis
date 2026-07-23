@@ -68,6 +68,7 @@ export function buildDataset(dossier_id: string): { dataset: Dataset; bronnen: B
           account_name: rekening,
           revenue_type: stroom,
           amount,
+          project_id: b.projecttoewijzingen?.[idx],
         });
       });
     }
@@ -112,6 +113,7 @@ export function buildDataset(dossier_id: string): { dataset: Dataset; bronnen: B
           import_status: "valid",
           vendor_name: colVal(b, row, "leverancier_of_omschrijving") || "",
           amount,
+          project_id: b.projecttoewijzingen?.[idx],
         });
       });
     }
@@ -156,6 +158,7 @@ export function buildDataset(dossier_id: string): { dataset: Dataset; bronnen: B
           import_status: "valid",
           employee_id: colVal(b, row, "medewerker") || "",
           direct_hours,
+          project_id: b.projecttoewijzingen?.[idx],
         });
       });
     }

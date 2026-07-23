@@ -23,6 +23,8 @@ export interface RevenueRecord extends BaseRecord {
   amount: number;
   /** Bv. "WLZ", "ZVW", "WMO", "PGB", "particulier" */
   revenue_type: string;
+  /** Toerekening aan een project (financieringsstroom of contract); leeg = "Algemeen". */
+  project_id?: string;
 }
 
 export interface PayrollCostRecord extends BaseRecord {
@@ -41,6 +43,8 @@ export interface ExternalHireRecord extends BaseRecord {
   account_code?: string;
   hire_type?: string;
   hours?: number;
+  /** Toerekening aan een project; leeg = "Algemeen". */
+  project_id?: string;
 }
 
 export interface PaidHoursRecord extends BaseRecord {
@@ -57,6 +61,8 @@ export interface DirectHoursRecord extends BaseRecord {
   client_id?: string;
   activity_code?: string;
   activity_description?: string;
+  /** Toerekening aan een project; leeg = "Algemeen". */
+  project_id?: string;
 }
 
 export interface NonProductiveHoursRecord extends BaseRecord {

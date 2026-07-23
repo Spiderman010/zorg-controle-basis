@@ -13,13 +13,16 @@ import { buildDataset } from "@/lib/datasetBuilder";
 import {
   computeMetrics,
   computeFinancieringsMix,
+  computeProjectAnalyse,
   financieringsSignaal,
   runChecks,
   runTrendChecksFromDataset,
   summarize,
+  STROOM_LABELS,
   type CheckId,
   type CheckResult,
 } from "@/core";
+import { listProjecten } from "@/lib/projecten";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 
 const CHECK_CODES: Record<CheckId, string> = {
@@ -114,8 +117,10 @@ export default function DossierControle() {
     const summary = summarize(checks);
     const mix = computeFinancieringsMix(dataset);
     const mixSignaal = financieringsSignaal(mix);
+    const projecten = listProjecten(d.id);
+    const projectAnalyse = projecten.length > 0 ? computeProjectAnalyse(dataset, projecten) : [];
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, byId };
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, byId };
   }, [d]);
 
   if (!d) {
@@ -128,7 +133,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, byId } = data;
   const m = metrics;
 
   const heeftBronnen = (data.dataset.revenue?.length ?? 0) > 0 || (data.dataset.payroll?.length ?? 0) > 0;
@@ -249,6 +254,54 @@ export default function DossierControle() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Projecten */}
+      {projectAnalyse.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-medium text-muted-foreground">Projecten</h2>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted text-xs">
+                    <tr>
+                      <th className="px-4 py-2 text-left">Project</th>
+                      <th className="px-4 py-2 text-right">Opbrengsten</th>
+                      <th className="px-4 py-2 text-right">Aandeel</th>
+                      <th className="px-4 py-2 text-right">Inhuur</th>
+                      <th className="px-4 py-2 text-right">Directe uren</th>
+                      <th className="px-4 py-2 text-right">Aandeel uren</th>
+                      <th className="px-4 py-2 text-right">Opbrengst per uur</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {projectAnalyse.map((p) => (
+                      <tr key={p.project_id} className="border-t">
+                        <td className="px-4 py-2">
+                          {p.naam}
+                          {p.stroom && (
+                            <span className="ml-2 text-xs text-muted-foreground">{STROOM_LABELS[p.stroom]}</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtEUR(p.revenue)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtPct(p.revenue_share)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtEUR(p.external_hire)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtNum(p.direct_hours, 1)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtPct(p.direct_hours_share)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums">{fmtEUR(p.revenue_per_direct_hour)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+          <p className="text-xs text-muted-foreground">
+            Opbrengst per uur = opbrengsten / directe uren van het project (gerealiseerd tarief). Projecten zijn
+            informatief en tellen niet mee in de hoofdscore; niet-toegewezen regels vallen onder "Algemeen".
+          </p>
+        </section>
+      )}
 
       {/* Hoofdscore */}
       <section className="space-y-3">

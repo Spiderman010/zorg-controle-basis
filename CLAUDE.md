@@ -6,7 +6,7 @@
 - Vóór elk werkblok: `git pull` (Lovable pusht ook naar `main`).
 
 ## Database/opslag
-- Dit project heeft GEEN database. Opslag is uitsluitend localStorage: `zcb.dossiers.v1`, `zcb.bronnen.v1`, `zcb.mappings.v1`.
+- Dit project heeft GEEN database. Opslag is uitsluitend localStorage: `zcb.dossiers.v1`, `zcb.bronnen.v1`, `zcb.mappings.v1`, `zcb.projecten.v1`.
 - Supabase-instanties, MCP-tools of credentials van andere projecten (o.a. BoekAssist) horen hier NIET thuis. Nooit een databaseverbinding toevoegen zonder expliciete opdracht.
 - Lovable Cloud-activatie gebeurt alleen via Lovable zelf, na expliciete opdracht van de gebruiker.
 

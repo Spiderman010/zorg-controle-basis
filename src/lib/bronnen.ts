@@ -61,6 +61,7 @@ export interface BronBestand {
   preview_rows: number;
   mapping?: Record<string, string>; // verplichtveld -> headernaam
   classificaties?: Record<number, Classificatie>; // index -> klasse
+  projecttoewijzingen?: Record<number, string>; // index -> project_id
   fout?: string;
 }
 

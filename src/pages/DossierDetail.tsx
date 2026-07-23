@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getDossier } from "@/lib/dossiers";
 import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
+import ProjectenBeheer from "@/components/projecten/ProjectenBeheer";
 
 export default function DossierDetail() {
   const { id = "" } = useParams();
@@ -50,6 +51,8 @@ export default function DossierDetail() {
           </dl>
         </CardContent>
       </Card>
+
+      <ProjectenBeheer dossierId={d.id} />
 
       <Card>
         <CardHeader><CardTitle className="text-base">Stap 2: Bronnen</CardTitle></CardHeader>
