@@ -122,15 +122,15 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
   };
 
   const setProject = (i: number, project_id: string) => {
-    const next = { ...toewijzingen };
+    if (project_id === NIEUW) return setNieuw(i);
+    const next = { ...(bron.projecttoewijzingen || {}) };
     if (project_id === ALGEMEEN) delete next[i];
     else next[i] = project_id;
     upsertBron({ ...bron, projecttoewijzingen: next });
     onChange();
   };
 
-  const bulkProject = (project_id: string) => {
-    if (!bulkOpen) return;
+  const assignAll = (project_id: string) => {
     const next: Record<number, string> = {};
     if (project_id !== ALGEMEEN) {
       bron.rijen.forEach((_, i) => {
@@ -139,6 +139,20 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
     }
     upsertBron({ ...bron, projecttoewijzingen: next });
     onChange();
+  };
+
+  const bulkProject = (project_id: string) => {
+    if (!bulkOpen) return;
+    if (project_id === NIEUW) return setNieuw("alle");
+    assignAll(project_id);
+  };
+
+  // Voorstel uit herkende factuur: kolom "Debiteur" (PDF-factuurlezer).
+  const debIdx = bron.headers.findIndex((h) => /debiteur|klant|opdrachtgever|leverancier/i.test(h));
+  const voorstelNaam = (n: number | "alle" | null) => {
+    if (debIdx < 0 || n === null) return undefined;
+    const rij = n === "alle" ? bron.rijen[0] : bron.rijen[n];
+    return rij?.[debIdx]?.trim() || undefined;
   };
 
   return (
@@ -159,19 +173,29 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
           <Button size="sm" variant="outline" onClick={() => bulk(knoppen[1].value)}>
             Alles {knoppen[1].label.toLowerCase()}
           </Button>
-          {projecten.length > 0 && (
-            <Select value="" onValueChange={bulkProject} onOpenChange={setBulkOpen}>
-              <SelectTrigger className="h-9 w-56">
-                <SelectValue placeholder="Alle regels naar project…" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALGEMEEN}>Algemeen (geen project)</SelectItem>
-                {projecten.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>{p.naam}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+          <Select value="" onValueChange={bulkProject} onOpenChange={setBulkOpen}>
+            <SelectTrigger className="h-9 w-60">
+              <SelectValue placeholder="Alle regels naar kostenplaats…" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NIEUW}>+ Nieuwe kostenplaats…</SelectItem>
+              <SelectItem value={ALGEMEEN}>Algemeen (geen kostenplaats)</SelectItem>
+              {projecten.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{projectLabel(p)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <NieuweKostenplaatsDialog
+            open={nieuw !== null}
+            onOpenChange={(o) => !o && setNieuw(null)}
+            dossierId={bron.dossier_id}
+            voorstelNaam={voorstelNaam(nieuw)}
+            voorstelRol={type === "inhuur" ? "onderaannemer" : "opdrachtgever"}
+            onAangemaakt={(p) => {
+              if (nieuw === "alle") assignAll(p.id);
+              else if (nieuw !== null) setProject(nieuw, p.id);
+            }}
+          />
           <div className="ml-auto flex gap-1 text-xs">
             {(["alle", "twijfel", "open"] as const).map((f) => (
               <Button
@@ -197,7 +221,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
                 <tr>
                   <th className="px-3 py-2 text-left">Omschrijving</th>
                   <th className="px-3 py-2 text-right">Bedrag / uren</th>
-                  {projecten.length > 0 && <th className="px-3 py-2 text-left">Project</th>}
+                  <th className="px-3 py-2 text-left">Kostenplaats</th>
                   <th className="px-3 py-2 text-right">Classificatie</th>
                 </tr>
               </thead>
@@ -206,25 +230,24 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
                   <tr key={i} className="border-t">
                     <td className="px-3 py-2">{r[omIdx] ?? ""}</td>
                     <td className="px-3 py-2 text-right tabular-nums">{r[wIdx] ?? ""}</td>
-                    {projecten.length > 0 && (
-                      <td className="px-3 py-2">
-                        {/* Fallback naar Algemeen bij een verwijderd project — spiegelt de rekenkern. */}
-                        <Select
-                          value={projecten.some((p) => p.id === toewijzingen[i]) ? toewijzingen[i] : ALGEMEEN}
-                          onValueChange={(v) => setProject(i, v)}
-                        >
-                          <SelectTrigger className="h-8 w-44 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ALGEMEEN}>Algemeen</SelectItem>
-                            {projecten.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>{p.naam}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </td>
-                    )}
+                    <td className="px-3 py-2">
+                      {/* Fallback naar Algemeen bij een verwijderd project — spiegelt de rekenkern. */}
+                      <Select
+                        value={projecten.some((p) => p.id === toewijzingen[i]) ? toewijzingen[i] : ALGEMEEN}
+                        onValueChange={(v) => setProject(i, v)}
+                      >
+                        <SelectTrigger className="h-8 w-48 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={NIEUW}>+ Nieuwe kostenplaats…</SelectItem>
+                          <SelectItem value={ALGEMEEN}>Algemeen</SelectItem>
+                          {projecten.map((p) => (
+                            <SelectItem key={p.id} value={p.id}>{projectLabel(p)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </td>
                     <td className="px-3 py-2">
                       <div className="flex justify-end gap-1">
                         {knoppen.map((k) => (
@@ -243,7 +266,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
                 ))}
                 {zichtbaar.length === 0 && (
                   <tr>
-                    <td colSpan={projecten.length > 0 ? 4 : 3} className="px-3 py-6 text-center text-muted-foreground">
+                    <td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">
                       Geen regels in deze weergave.
                     </td>
                   </tr>
