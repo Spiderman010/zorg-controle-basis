@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { OpslagDiagnoseMelding } from "@/components/OpslagDiagnoseMelding";
 
 const navItems = [
   { to: "/", label: "Dashboard", end: true },
@@ -38,6 +39,7 @@ export default function AppShell() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-8">
+        <OpslagDiagnoseMelding />
         <Outlet />
       </main>
     </div>
