@@ -11,10 +11,13 @@ import {
   type Classificatie,
   upsertBron,
 } from "@/lib/bronnen";
-import { listProjecten } from "@/lib/projecten";
+import { listProjecten, ROL_KORT, type Project } from "@/lib/projecten";
+import { NieuweKostenplaatsDialog } from "./NieuweKostenplaatsDialog";
 
 /** Sentinel voor "Algemeen" (geen toewijzing); Radix Select staat geen lege waarde toe. */
 const ALGEMEEN = "__algemeen__";
+const NIEUW = "__nieuw__";
+const projectLabel = (p: Project) => (p.rol ? `${p.naam} (${ROL_KORT[p.rol]})` : p.naam);
 
 interface Props {
   bronnen: BronBestand[];
@@ -76,6 +79,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
   // anders ongemerkt álle toewijzingen overschrijven. Alleen toepassen als de
   // dropdown daadwerkelijk geopend is geweest.
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [nieuw, setNieuw] = useState<number | "alle" | null>(null);
 
   const m = bron.mapping || {};
   const omschrijvingHeader =
