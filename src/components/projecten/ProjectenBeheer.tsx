@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STROOM_LABELS, STROOM_VOLGORDE, type Financieringsstroom } from "@/core";
-import { addProject, deleteProject, listProjecten, updateProject, projectLabel } from "@/lib/projecten";
+import { addProject, deleteProject, listProjecten, updateProject, projectLabel, type Project } from "@/lib/projecten";
+import { BewerkProjectDialog } from "./BewerkProjectDialog";
 import { getDossier, updateDossier } from "@/lib/dossiers";
 
 /** Sentinel: Radix Select staat geen lege waarde toe. */
@@ -32,6 +33,7 @@ function formatTarief(t: number | undefined): string {
 
 export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: string; onChange?: () => void }) {
   const [versie, setVersie] = useState(0);
+  const [bewerk, setBewerk] = useState<Project | null>(null);
   const [naam, setNaam] = useState("");
   const [stroom, setStroom] = useState<string>(GEEN_STROOM);
   const [tarief, setTarief] = useState("");
@@ -118,6 +120,9 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
                       refresh();
                     }}
                   />
+                  <Button size="sm" variant="outline" onClick={() => setBewerk(p)}>
+                    Bewerken
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
