@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { addProject, listProjecten, ROL_LABELS, type Project, type ProjectRol } from "@/lib/projecten";
 
+const GEEN = "__geen__";
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -20,6 +22,8 @@ export function NieuweKostenplaatsDialog({ open, onOpenChange, dossierId, voorst
   const [rol, setRol] = useState<ProjectRol>("opdrachtgever");
   const [tarief, setTarief] = useState("");
   const [fout, setFout] = useState("");
+  const [via, setVia] = useState(GEEN);
+  const opdrachtgevers = open ? listProjecten(dossierId).filter((p) => p.rol === "opdrachtgever") : [];
 
   useEffect(() => {
     if (open) {
@@ -27,6 +31,7 @@ export function NieuweKostenplaatsDialog({ open, onOpenChange, dossierId, voorst
       setRol(voorstelRol ?? "opdrachtgever");
       setTarief("");
       setFout("");
+      setVia(GEEN);
     }
   }, [open, voorstelNaam, voorstelRol]);
 
@@ -40,7 +45,7 @@ export function NieuweKostenplaatsDialog({ open, onOpenChange, dossierId, voorst
       t = Number(tarief.replace(",", "."));
       if (!Number.isFinite(t) || t < 0) return setFout("Uurtarief moet een positief getal zijn.");
     }
-    onAangemaakt(addProject(dossierId, n, undefined, t, rol));
+    onAangemaakt(addProject(dossierId, n, undefined, t, rol, rol === "client" && via !== GEEN ? via : undefined));
     onOpenChange(false);
   };
 
@@ -67,6 +72,20 @@ export function NieuweKostenplaatsDialog({ open, onOpenChange, dossierId, voorst
               </SelectContent>
             </Select>
           </div>
+          {rol === "client" && (
+            <div className="space-y-1.5">
+              <Label>Via opdrachtgever (onderaanneming)</Label>
+              <Select value={via} onValueChange={setVia}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={GEEN}>Geen — directe cliënt</SelectItem>
+                  {opdrachtgevers.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.naam}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="kp-tarief">Afgesproken uurtarief in euro (optioneel)</Label>
             <Input id="kp-tarief" inputMode="decimal" placeholder="bijv. 45,00" value={tarief} onChange={(e) => setTarief(e.target.value)} />

@@ -11,13 +11,12 @@ import {
   type Classificatie,
   upsertBron,
 } from "@/lib/bronnen";
-import { listProjecten, ROL_KORT, type Project } from "@/lib/projecten";
+import { listProjecten, projectLabel as label } from "@/lib/projecten";
 import { NieuweKostenplaatsDialog } from "./NieuweKostenplaatsDialog";
 
 /** Sentinel voor "Algemeen" (geen toewijzing); Radix Select staat geen lege waarde toe. */
 const ALGEMEEN = "__algemeen__";
 const NIEUW = "__nieuw__";
-const projectLabel = (p: Project) => (p.rol ? `${p.naam} (${ROL_KORT[p.rol]})` : p.naam);
 
 interface Props {
   bronnen: BronBestand[];
@@ -185,7 +184,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
               <SelectItem value={NIEUW}>+ Nieuwe kostenplaats…</SelectItem>
               <SelectItem value={ALGEMEEN}>Algemeen (geen kostenplaats)</SelectItem>
               {projecten.map((p) => (
-                <SelectItem key={p.id} value={p.id}>{projectLabel(p)}</SelectItem>
+                <SelectItem key={p.id} value={p.id}>{label(p, projecten)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -247,7 +246,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
                           <SelectItem value={NIEUW}>+ Nieuwe kostenplaats…</SelectItem>
                           <SelectItem value={ALGEMEEN}>Algemeen</SelectItem>
                           {projecten.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>{projectLabel(p)}</SelectItem>
+                            <SelectItem key={p.id} value={p.id}>{label(p, projecten)}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>

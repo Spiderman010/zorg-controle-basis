@@ -20,6 +20,8 @@ export interface Project extends ProjectDefMetTarief {
   dossier_id: string;
   aangemaakt_op: string; // ISO
   rol?: ProjectRol;
+  /** Bij een cliënt: id van de opdrachtgever via wie de zorg loopt (onderaanneming). */
+  via_id?: string;
 }
 
 const KEY = "zcb.projecten.v1";
@@ -46,6 +48,7 @@ export function addProject(
   stroom?: Financieringsstroom,
   tarief?: number,
   rol?: ProjectRol,
+  via_id?: string,
 ): Project {
   const project: Project = {
     id: crypto.randomUUID(),
@@ -54,16 +57,24 @@ export function addProject(
     stroom,
     tarief,
     rol,
+    via_id,
     aangemaakt_op: new Date().toISOString(),
   };
   write([...read(), project]);
   return project;
 }
 
-export function updateProject(id: string, patch: Partial<Pick<Project, "naam" | "stroom" | "tarief">>) {
+export function updateProject(id: string, patch: Partial<Pick<Project, "naam" | "stroom" | "tarief" | "rol" | "via_id">>) {
   write(read().map((p) => (p.id === id ? { ...p, ...patch } : p)));
 }
 
 export function deleteProject(id: string) {
   write(read().filter((p) => p.id !== id));
+}
+
+/** Weergavenaam, bv. "M Bouzian (Cliënt via Lea's Zorghart)". */
+export function projectLabel(p: Project, alle: Project[]): string {
+  if (!p.rol) return p.naam;
+  const via = p.rol === "client" && p.via_id ? alle.find((x) => x.id === p.via_id) : undefined;
+  return via ? `${p.naam} (${ROL_KORT[p.rol]} via ${via.naam})` : `${p.naam} (${ROL_KORT[p.rol]})`;
 }
