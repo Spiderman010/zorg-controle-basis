@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import KopieerKnop from "@/components/KopieerKnop";
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,7 +206,10 @@ export default function DossierRapportage() {
       </div>
 
       <Card className="print-card">
-        <CardHeader><CardTitle className="text-base">Conclusie</CardTitle></CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <CardTitle className="text-base">Conclusie</CardTitle>
+          <KopieerKnop tekst={`${c.conclusie}\n${c.betrouwbaarheid}`} />
+        </CardHeader>
         <CardContent className="space-y-4 text-sm">
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             <div className="rounded-md border p-3">
@@ -230,7 +234,10 @@ export default function DossierRapportage() {
 
       {c.verbeterpunten.length > 0 && (
         <Card className="print-card">
-          <CardHeader><CardTitle className="text-base">Actiepunten voor de zorgondernemer</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-base">Actiepunten voor de zorgondernemer</CardTitle>
+            <KopieerKnop tekst={c.verbeterpunten.slice(0, 5).map((v, i) => `${i + 1}. ${v}`).join("\n")} />
+          </CardHeader>
           <CardContent className="text-sm">
             <ol className="list-decimal space-y-1 pl-5">
               {c.verbeterpunten.slice(0, 5).map((v, i) => <li key={i}>{v}</li>)}
