@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STROOM_LABELS, STROOM_VOLGORDE, type Financieringsstroom } from "@/core";
-import { addProject, deleteProject, listProjecten, updateProject } from "@/lib/projecten";
+import { addProject, deleteProject, listProjecten, updateProject, projectLabel } from "@/lib/projecten";
 import { getDossier, updateDossier } from "@/lib/dossiers";
 
 /** Sentinel: Radix Select staat geen lege waarde toe. */
@@ -79,10 +79,27 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
             {projecten.map((p) => (
               <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
                 <span className="flex items-center gap-2">
-                  <span className="font-medium">{p.naam}</span>
+                  <span className="font-medium">{projectLabel(p, projecten)}</span>
                   {p.stroom && <Badge variant="outline">{STROOM_LABELS[p.stroom]}</Badge>}
                 </span>
                 <span className="flex items-center gap-2">
+                  {p.rol === "client" && (
+                    <Select
+                      value={p.via_id && projecten.some((o) => o.id === p.via_id) ? p.via_id : GEEN_STROOM}
+                      onValueChange={(v) => {
+                        updateProject(p.id, { via_id: v === GEEN_STROOM ? undefined : v });
+                        refresh();
+                      }}
+                    >
+                      <SelectTrigger className="h-8 w-48 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={GEEN_STROOM}>Directe cliënt</SelectItem>
+                        {projecten.filter((o) => o.rol === "opdrachtgever").map((o) => (
+                          <SelectItem key={o.id} value={o.id}>Via {o.naam}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
                   <label className="text-xs text-muted-foreground">Uurtarief €</label>
                   <Input
                     className="h-8 w-24 text-right"
