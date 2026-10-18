@@ -9,6 +9,7 @@ import {
   computeMetrics,
   runChecks,
   runTrendChecksFromDataset,
+  summarize,
   type CheckId,
   type CheckResult,
   type CheckStatus,
@@ -172,6 +173,7 @@ export default function DossierRapportage() {
 
   const { metrics: m, checks, trends } = data;
   const c = bouwConclusie(checks, trends);
+  const s = summarize(checks);
 
   const exportDatum = new Intl.DateTimeFormat("nl-NL", { dateStyle: "long" }).format(new Date());
 
@@ -204,11 +206,38 @@ export default function DossierRapportage() {
 
       <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Conclusie</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="rounded-md border p-3">
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Hoofdscore</p>
+              <p className="text-2xl font-semibold tabular-nums">
+                {s.scorePercent === undefined ? "—" : `${s.scorePercent.toFixed(0)}%`}
+              </p>
+            </div>
+            {(["groen", "oranje", "rood", "grijs"] as const).map((k) => (
+              <div key={k} className={`rounded-md border border-l-4 p-3 ${STATUS_KLEUR[k]}`}>
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                  {k === "grijs" ? "Niet uitvoerbaar" : k}
+                </p>
+                <p className="text-2xl font-semibold tabular-nums">{s[k]}</p>
+              </div>
+            ))}
+          </div>
           <p className="font-medium">{c.conclusie}</p>
           <p className="text-muted-foreground">{c.betrouwbaarheid}</p>
         </CardContent>
       </Card>
+
+      {c.verbeterpunten.length > 0 && (
+        <Card className="print-card">
+          <CardHeader><CardTitle className="text-base">Actiepunten voor de zorgondernemer</CardTitle></CardHeader>
+          <CardContent className="text-sm">
+            <ol className="list-decimal space-y-1 pl-5">
+              {c.verbeterpunten.slice(0, 5).map((v, i) => <li key={i}>{v}</li>)}
+            </ol>
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Kerncijfers</CardTitle></CardHeader>

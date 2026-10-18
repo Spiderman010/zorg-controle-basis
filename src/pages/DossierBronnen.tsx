@@ -10,6 +10,7 @@ import UploadTab from "@/components/bronnen/UploadTab";
 import MappingTab from "@/components/bronnen/MappingTab";
 import ClassificatieTab from "@/components/bronnen/ClassificatieTab";
 import ValidatieTab from "@/components/bronnen/ValidatieTab";
+import { Check } from "lucide-react";
 
 export default function DossierBronnen() {
   const { id = "" } = useParams();
@@ -23,6 +24,18 @@ export default function DossierBronnen() {
   }, [id]);
 
   const teller = useMemo(() => bronnen.length, [bronnen]);
+  const stappen = useMemo(() => {
+    const bruikbaar = bronnen.filter((b) => !b.fout && b.type !== "niet_gebruiken");
+    const bevestigd = bruikbaar.filter((b) => b.type_bevestigd);
+    const gekoppeld = bevestigd.filter((b) => b.mapping && Object.keys(b.mapping).length > 0);
+    const open = bronnen.length - bevestigd.length;
+    return [
+      { id: "upload", label: "Upload & type", klaar: bevestigd.length > 0 && open === 0, info: `${bevestigd.length} bevestigd${open > 0 ? `, ${open} open` : ""}` },
+      { id: "mapping", label: "Kolommen koppelen", klaar: bevestigd.length > 0 && gekoppeld.length === bevestigd.length, info: `${gekoppeld.length} van ${bevestigd.length} gekoppeld` },
+      { id: "classificatie", label: "Classificatie", klaar: false, info: "Regels beoordelen" },
+      { id: "validatie", label: "Validatie", klaar: false, info: "Fouten en signalen" },
+    ];
+  }, [bronnen]);
 
   if (!dossier) {
     return (
@@ -51,11 +64,22 @@ export default function DossierBronnen() {
         </CardHeader>
         <CardContent>
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="upload">1. Upload &amp; type</TabsTrigger>
-              <TabsTrigger value="mapping">2. Kolommen koppelen</TabsTrigger>
-              <TabsTrigger value="classificatie">3. Classificatie</TabsTrigger>
-              <TabsTrigger value="validatie">4. Validatie</TabsTrigger>
+            <TabsList className="grid h-auto w-full grid-cols-2 gap-1 md:grid-cols-4">
+              {stappen.map((s, i) => (
+                <TabsTrigger key={s.id} value={s.id} className="flex items-center justify-start gap-2 py-2 text-left">
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs ${
+                      s.klaar ? "border-success bg-success text-success-foreground" : "border-muted-foreground/40"
+                    }`}
+                  >
+                    {s.klaar ? <Check className="h-3.5 w-3.5" /> : i + 1}
+                  </span>
+                  <span className="flex flex-col">
+                    <span className="text-xs font-medium">{s.label}</span>
+                    <span className="text-[10px] text-muted-foreground">{s.info}</span>
+                  </span>
+                </TabsTrigger>
+              ))}
             </TabsList>
 
             <TabsContent value="upload" className="mt-6">
