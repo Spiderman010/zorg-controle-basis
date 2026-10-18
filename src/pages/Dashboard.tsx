@@ -9,6 +9,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { listDossiers, type Dossier, type DossierStatus } from "@/lib/dossiers";
+import { listBronnen } from "@/lib/bronnen";
+import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
+
+function voortgang(dossierId: string) {
+  const typen = new Set(
+    listBronnen(dossierId)
+      .filter((b) => b.type_bevestigd && !b.fout && b.type && b.type !== "niet_gebruiken")
+      .map((b) => b.type),
+  );
+  return { aantal: typen.size, klaar: hasMinimaleBronnen(dossierId) };
+}
 
 type StatusFilter = "alle" | DossierStatus;
 type Sortering = "nieuwste" | "oudste" | "klant" | "periode";
@@ -188,6 +199,14 @@ export default function Dashboard() {
                       <Badge variant="outline" className={cn("capitalize", statusStijl[d.status])}>
                         {d.status}
                       </Badge>
+                      {(() => {
+                        const v = voortgang(d.id);
+                        return (
+                          <div className={cn("mt-1 text-xs", v.klaar ? "text-success" : "text-muted-foreground")}>
+                            {v.aantal} / 6 bronnen{v.klaar ? " · klaar voor controle" : ""}
+                          </div>
+                        );
+                      })()}
                     </TableCell>
                     <TableCell className="hidden text-sm text-muted-foreground sm:table-cell">
                       {datum(d.aangemaakt_op)}
@@ -196,6 +215,9 @@ export default function Dashboard() {
                       <div className="flex justify-end gap-1">
                         <Button asChild variant="ghost" size="sm" className="hidden lg:inline-flex">
                           <Link to={`/dossiers/${d.id}/controle`}>Controle</Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="sm">
+                          <Link to={`/dossiers/${d.id}/bronnen`}>Bronnen</Link>
                         </Button>
                         <Button asChild variant="outline" size="sm">
                           <Link to={`/dossiers/${d.id}`}>Openen</Link>
