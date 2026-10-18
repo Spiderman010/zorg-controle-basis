@@ -11,7 +11,9 @@ import {
   CSVError,
   detectBronType,
   deleteBron,
+  isExcelBestand,
   parseCSV,
+  parseExcel,
   upsertBron,
 } from "@/lib/bronnen";
 
@@ -84,12 +86,15 @@ function BronKaart({
         <input
           ref={inputRef}
           type="file"
-          accept=".csv,text/csv"
+          accept=".csv,.xlsx,.xls,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel"
           className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            handleFiles(e.target.files);
+            e.target.value = "";
+          }}
         />
         <Button size="sm" variant="outline" className="w-full" onClick={() => inputRef.current?.click()}>
-          CSV uploaden
+          Bestand uploaden (CSV / Excel)
         </Button>
         <ul className="space-y-2">
           {bestanden.map((b) => (
@@ -219,8 +224,9 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
       upsertBron(makeFout(dossierId, file.name, "Dit bestand is leeg. Upload een bestand met gegevens."));
       return;
     }
-    const text = await file.text();
-    const { headers, rows } = parseCSV(text);
+    const { headers, rows } = isExcelBestand(file.name)
+      ? await parseExcel(await file.arrayBuffer())
+      : parseCSV(await file.text());
     if (headers.length === 0) {
       upsertBron(makeFout(dossierId, file.name, "Bestand bevat geen kolomkoppen."));
       return;

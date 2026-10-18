@@ -193,6 +193,39 @@ export function parseCSV(text: string): { headers: string[]; rows: string[][] } 
   return { headers, rows };
 }
 
+/** Is dit bestand een Excel-werkmap (.xlsx / .xls)? */
+export function isExcelBestand(naam: string): boolean {
+  return /\.(xlsx|xls)$/i.test(naam);
+}
+
+/** Leest het eerste werkblad van een Excel-bestand naar headers + rijen (als tekst). */
+export async function parseExcel(buffer: ArrayBuffer): Promise<{ headers: string[]; rows: string[][] }> {
+  const XLSX = await import("xlsx");
+  let wb;
+  try {
+    wb = XLSX.read(buffer, { type: "array", cellDates: false });
+  } catch {
+    throw new CSVError("onleesbaar", "We konden dit Excel-bestand niet lezen. Controleer of het bestand niet beschadigd of beveiligd is.");
+  }
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) throw new CSVError("leeg", "Dit Excel-bestand bevat geen werkbladen.");
+  const raw = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[sheetName], {
+    header: 1,
+    raw: true,
+    defval: "",
+    blankrows: false,
+  });
+  const toStr = (v: unknown) => (v === null || v === undefined ? "" : String(v).trim());
+  const lines = raw.map((r) => (r as unknown[]).map(toStr)).filter((r) => r.some((c) => c.length > 0));
+  if (lines.length === 0) throw new CSVError("leeg", "Het eerste werkblad is leeg. Upload een bestand met gegevens.");
+  const headers = lines[0].filter((h) => h.length > 0);
+  if (headers.length === 0) {
+    throw new CSVError("onleesbaar", "We konden geen kolomkoppen vinden. Controleer of de eerste regel kolomnamen bevat.");
+  }
+  const rows = lines.slice(1).map((r) => headers.map((_, i) => r[i] ?? ""));
+  return { headers, rows };
+}
+
 // ---- Auto-detectie bestandstype op basis van bestandsnaam + headers ----
 export function detectBronType(bestandsnaam: string, headers: string[]): BronType | null {
   const name = bestandsnaam.toLowerCase();
