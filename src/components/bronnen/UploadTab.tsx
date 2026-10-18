@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +17,8 @@ import {
   parseCSV,
   parseExcel,
   parsePdf,
+  bewaarPdf,
+  getPdf,
   upsertBron,
 } from "@/lib/bronnen";
 
@@ -202,6 +205,7 @@ function BestandsRij({
             Bevestig
           </Button>
         )}
+        {isPdfBestand(bron.bestandsnaam) && <BekijkPdf bron={bron} />}
         <Button
           size="sm"
           variant="ghost"
@@ -237,8 +241,18 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
     }
     const auto = voorgesteldType ?? detectBronType(file.name, headers);
     const isManueel = !!voorgesteldType;
+    const id = crypto.randomUUID();
+    if (isPdfBestand(file.name)) {
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result));
+        r.onerror = () => rej(r.error);
+        r.readAsDataURL(file);
+      });
+      bewaarPdf(id, dataUrl);
+    }
     upsertBron({
-      id: crypto.randomUUID(),
+      id,
       dossier_id: dossierId,
       bestandsnaam: file.name,
       geupload_op: new Date().toISOString(),
@@ -274,4 +288,64 @@ function makeFout(dossierId: string, naam: string, fout: string): BronBestand {
     preview_rows: 0,
     fout,
   };
+}
+
+function BekijkPdf({ bron }: { bron: BronBestand }) {
+  const [open, setOpen] = useState(false);
+  const [url, setUrl] = useState<string | null>(null);
+  const openen = async () => {
+    const data = getPdf(bron.id);
+    if (data) {
+      const blob = await (await fetch(data)).blob();
+      setUrl(URL.createObjectURL(blob));
+    } else setUrl(null);
+    setOpen(true);
+  };
+  return (
+    <>
+      <Button size="sm" variant="outline" onClick={openen}>
+        Bekijk
+      </Button>
+      <Dialog
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o && url) URL.revokeObjectURL(url);
+        }}
+      >
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>{bron.bestandsnaam}</DialogTitle>
+          </DialogHeader>
+          {url ? (
+            <div className="space-y-2">
+              <iframe src={url} title={bron.bestandsnaam} className="h-[70vh] w-full rounded-md border" />
+              <a href={url} target="_blank" rel="noreferrer" className="text-sm underline">
+                Openen in nieuw tabblad
+              </a>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Het originele bestand is niet bewaard (eerder geüpload of browseropslag vol). Upload de PDF opnieuw om hem te kunnen bekijken.
+            </p>
+          )}
+          {bron.rijen.length > 0 && (
+            <div className="overflow-x-auto">
+              <p className="mb-1 text-xs font-medium text-muted-foreground">Uitgelezen gegevens</p>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr>{bron.headers.map((h) => <th key={h} className="border-b p-1 text-left">{h}</th>)}</tr>
+                </thead>
+                <tbody>
+                  {bron.rijen.slice(0, 10).map((r, i) => (
+                    <tr key={i}>{r.map((c, j) => <td key={j} className="border-b p-1">{c}</td>)}</tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }

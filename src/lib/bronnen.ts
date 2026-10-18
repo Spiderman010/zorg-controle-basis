@@ -102,6 +102,7 @@ export function upsertBron(b: BronBestand) {
 
 export function deleteBron(id: string) {
   write(read().filter((b) => b.id !== id));
+  verwijderPdf(id);
 }
 
 // ---- Opgeslagen mappings (klantprofiel per bedrijfsnaam + type) ----
