@@ -79,7 +79,7 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
         {projecten.length > 0 && (
           <ul className="space-y-2">
             {projecten.map((p) => (
-              <li key={p.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
+              <li key={`${p.id}-${versie}`} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-sm">
                 <span className="flex items-center gap-2">
                   <span className="font-medium">{projectLabel(p, projecten)}</span>
                   {p.stroom && <Badge variant="outline">{STROOM_LABELS[p.stroom]}</Badge>}
@@ -200,6 +200,7 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
           </span>
         </div>
       </CardContent>
+      <BewerkProjectDialog project={bewerk} alle={projecten} onClose={() => setBewerk(null)} onOpgeslagen={refresh} />
     </Card>
   );
 }
