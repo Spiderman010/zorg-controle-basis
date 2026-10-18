@@ -2,9 +2,24 @@
 // Later vervangen door Lovable Cloud.
 import type { Financieringsstroom, ProjectDefMetTarief } from "@/core";
 
+export type ProjectRol = "opdrachtgever" | "onderaannemer" | "client";
+
+export const ROL_LABELS: Record<ProjectRol, string> = {
+  opdrachtgever: "Opdrachtgever / Debiteur",
+  onderaannemer: "Onderaannemer / Zorgpartner / ZZP'er",
+  client: "Cliënt / Zorgvrager",
+};
+
+export const ROL_KORT: Record<ProjectRol, string> = {
+  opdrachtgever: "Opdrachtgever",
+  onderaannemer: "Partner",
+  client: "Cliënt",
+};
+
 export interface Project extends ProjectDefMetTarief {
   dossier_id: string;
   aangemaakt_op: string; // ISO
+  rol?: ProjectRol;
 }
 
 const KEY = "zcb.projecten.v1";
@@ -30,6 +45,7 @@ export function addProject(
   naam: string,
   stroom?: Financieringsstroom,
   tarief?: number,
+  rol?: ProjectRol,
 ): Project {
   const project: Project = {
     id: crypto.randomUUID(),
@@ -37,6 +53,7 @@ export function addProject(
     naam: naam.trim(),
     stroom,
     tarief,
+    rol,
     aangemaakt_op: new Date().toISOString(),
   };
   write([...read(), project]);
