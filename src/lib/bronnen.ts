@@ -273,6 +273,8 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     return cellen;
   };
   const tabel = regels.map(naarCellen);
+  const factuur = herkenFactuur(regels, tabel);
+  if (factuur) return factuur;
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
@@ -284,6 +286,103 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     .filter((c) => c.length >= 2 && c.join("|") !== kopTekst)
     .map((c) => headers.map((_, i) => c[i] ?? ""));
   return { headers, rows };
+}
+
+const MAANDEN = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
+const BEDRAG_RE = /€?\s*-?\d{1,3}(?:\.\d{3})*,\d{2}|€\s*-?\d+(?:,\d{2})?/;
+
+/** "€ 1.500,00" -> "1500.00" */
+export function nlBedragNaarGetal(s: string): string | null {
+  const m = s.match(BEDRAG_RE);
+  if (!m) return null;
+  const n = Number(m[0].replace(/[€\s.]/g, "").replace(",", "."));
+  return Number.isFinite(n) ? n.toFixed(2) : null;
+}
+
+export const FACTUUR_KOLOMMEN = ["Periode", "Factuurnummer", "Factuurdatum", "Debiteur", "Categorie", "Omschrijving", "Bedrag"];
+
+/**
+ * Herkent een losse verkoopfactuur (factuurnummer + "Totaalbedrag excl. btw")
+ * en zet die om naar vaste kolommen met één rij per factuurregel.
+ */
+export function herkenFactuur(
+  regels: PdfTekstItem[][],
+  tabel: string[][],
+): { headers: string[]; rows: string[][] } | null {
+  const alleTekst = tabel.map((c) => c.join(" "));
+  const volledig = alleTekst.join("\n");
+  const nrMatch = volledig.match(/Factuur(?:nummer)?\s*:?\s*(\d{4,})/i);
+  const totaalIdx = alleTekst.findIndex((t) => /totaal\w*\s*excl/i.test(t));
+  if (!nrMatch || totaalIdx < 0) return null;
+
+  // Factuurdatum: datum direct na het label "Factuurdatum", anders eerste datum.
+  const datums = [...volledig.matchAll(/(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/g)];
+  const fdIdx = volledig.search(/factuurdatum/i);
+  const fd = datums.find((d) => fdIdx < 0 || (d.index ?? 0) > fdIdx) ?? datums[0];
+  const factuurdatum = fd ? `${fd[3]}-${fd[2].padStart(2, "0")}-${fd[1].padStart(2, "0")}` : "";
+
+  // Debiteur: bovenste tekst in de linkerkolom.
+  const links = regels.flat().filter((i) => i.pagina === 1 && i.x < 200 && !/factuur/i.test(i.str));
+  const debiteur = links.sort((a, b) => b.y - a.y)[0]?.str.trim() ?? "";
+
+  const periodeVoor = (omschrijving: string) => {
+    const jaar = fd ? Number(fd[3]) : new Date().getFullYear();
+    const mi = MAANDEN.findIndex((m) => new RegExp(`\\b${m}\\b`, "i").test(omschrijving));
+    if (mi >= 0) {
+      const factuurMaand = fd ? Number(fd[2]) : 12;
+      const j = mi + 1 > factuurMaand + 1 ? jaar - 1 : jaar;
+      return `${j}-${String(mi + 1).padStart(2, "0")}`;
+    }
+    return factuurdatum.slice(0, 7);
+  };
+
+  // Factuurregels: begint met een aantal en bevat een bedrag, vóór de totaalregel.
+  const rows: string[][] = [];
+  for (const cellen of tabel.slice(0, totaalIdx)) {
+    if (cellen.length < 3 || !/^\d+([.,]\d+)?$/.test(cellen[0])) continue;
+    const bedragCel = cellen.slice(2).find((c) => nlBedragNaarGetal(c) !== null);
+    const bedrag = bedragCel ? nlBedragNaarGetal(bedragCel) : null;
+    if (!bedrag) continue;
+    const omschrijving = cellen[1];
+    rows.push([periodeVoor(omschrijving), nrMatch[1], factuurdatum, debiteur, "Zorgopbrengst", omschrijving, bedrag]);
+  }
+  if (rows.length === 0) {
+    const bedrag = nlBedragNaarGetal(alleTekst[totaalIdx]);
+    if (!bedrag) return null;
+    rows.push([periodeVoor(""), nrMatch[1], factuurdatum, debiteur, "Zorgopbrengst", `Factuur ${nrMatch[1]}`, bedrag]);
+  }
+  return { headers: [...FACTUUR_KOLOMMEN], rows };
+}
+
+// ---- Originele PDF's bewaren (lokaal, voor inzien) ----
+const PDF_KEY = "zcb.pdfs.v1";
+function readPdfs(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(PDF_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+/** Bewaart de PDF als data-URL. Geeft false als de browseropslag vol is. */
+export function bewaarPdf(id: string, dataUrl: string): boolean {
+  try {
+    const all = readPdfs();
+    all[id] = dataUrl;
+    localStorage.setItem(PDF_KEY, JSON.stringify(all));
+    return true;
+  } catch {
+    return false;
+  }
+}
+export function getPdf(id: string): string | null {
+  return readPdfs()[id] ?? null;
+}
+export function verwijderPdf(id: string) {
+  const all = readPdfs();
+  if (all[id]) {
+    delete all[id];
+    localStorage.setItem(PDF_KEY, JSON.stringify(all));
+  }
 }
 
 /** Leest een digitale PDF volledig in de browser en zet de tekst om naar headers + rijen. */
