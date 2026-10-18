@@ -87,14 +87,46 @@ function fmtPct(n: number | undefined) {
   return `${(n * 100).toFixed(1)}%`;
 }
 
+interface Meter {
+  /** Drempels als fractie (0-1), alleen voor weergave; statuslogica zit in de rekenkern. */
+  oranje: number;
+  rood: number;
+  /** "hoog" = hoger is slechter, "laag" = lager is slechter */
+  richting: "hoog" | "laag";
+}
+
 interface KPIProps {
   label: string;
   value: string;
   hint: string;
   status?: CheckResult["status"];
+  ratio?: number;
+  meter?: Meter;
 }
 
-function KPICard({ label, value, hint, status }: KPIProps) {
+function DrempelMeter({ ratio, meter }: { ratio?: number; meter: Meter }) {
+  const pct = (n: number) => `${Math.min(100, Math.max(0, n * 100))}%`;
+  const hoog = meter.richting === "hoog";
+  const lo = Math.min(meter.oranje, meter.rood);
+  const hi = Math.max(meter.oranje, meter.rood);
+  return (
+    <div className="space-y-1">
+      <div className="relative h-2 w-full overflow-hidden rounded-full bg-muted">
+        <div className={`absolute inset-y-0 ${hoog ? "bg-warning/40" : "bg-warning/40"}`} style={{ left: pct(lo), width: `calc(${pct(hi)} - ${pct(lo)})` }} />
+        <div className="absolute inset-y-0 bg-destructive/40" style={hoog ? { left: pct(hi), right: 0 } : { left: 0, width: pct(lo) }} />
+        <div className="absolute inset-y-0 bg-success/40" style={hoog ? { left: 0, width: pct(lo) } : { left: pct(hi), right: 0 }} />
+        {ratio !== undefined && Number.isFinite(ratio) && (
+          <div className="absolute -top-0.5 h-3 w-1 rounded bg-foreground" style={{ left: `calc(${pct(ratio)} - 2px)` }} />
+        )}
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        Oranje {hoog ? ">" : "<"} {(meter.oranje * 100).toFixed(0)}% · rood {hoog ? ">" : "<"} {(meter.rood * 100).toFixed(0)}%
+      </p>
+    </div>
+  );
+}
+
+function KPICard({ label, value, hint, status, ratio, meter }: KPIProps) {
   return (
     <Card>
       <CardContent className="space-y-2 p-4">
@@ -103,6 +135,7 @@ function KPICard({ label, value, hint, status }: KPIProps) {
           {status && <StatusBadge status={status} />}
         </div>
         <p className="text-xl font-semibold tabular-nums">{value}</p>
+        {meter && <DrempelMeter ratio={ratio} meter={meter} />}
         <p className="text-xs text-muted-foreground">{hint}</p>
       </CardContent>
     </Card>
@@ -191,6 +224,8 @@ export default function DossierControle() {
             value={fmtPct(m.personnel_cost_ratio)}
             hint="(personeel + inhuur) / omzet."
             status={byId.personnel_cost_ratio?.status}
+            ratio={m.personnel_cost_ratio}
+            meter={{ oranje: 0.75, rood: 0.85, richting: "hoog" }}
           />
           <KPICard label="Betaalde uren" value={fmtNum(m.totals.paid_hours, 0)} hint="Verloonde uren totaal." />
           <KPICard
@@ -198,6 +233,8 @@ export default function DossierControle() {
             value={fmtPct(m.direct_hours_ratio)}
             hint="Cliëntgebonden uren / betaalde uren."
             status={byId.direct_hours_ratio?.status}
+            ratio={m.direct_hours_ratio}
+            meter={{ oranje: 0.6, rood: 0.5, richting: "laag" }}
           />
           <KPICard
             label="Niet-productieve urenratio"
@@ -211,6 +248,8 @@ export default function DossierControle() {
             value={fmtPct(m.remaining_hours_ratio)}
             hint="Resturen / betaalde uren."
             status={byId.remaining_hours_analysis?.status}
+            ratio={m.remaining_hours_ratio}
+            meter={{ oranje: 0.15, rood: 0.25, richting: "hoog" }}
           />
           <KPICard
             label="Resturen euro-impact"
