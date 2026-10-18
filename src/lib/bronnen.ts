@@ -226,6 +226,90 @@ export async function parseExcel(buffer: ArrayBuffer): Promise<{ headers: string
   return { headers, rows };
 }
 
+/** Is dit bestand een PDF? */
+export function isPdfBestand(naam: string): boolean {
+  return /\.pdf$/i.test(naam);
+}
+
+export interface PdfTekstItem {
+  str: string;
+  x: number;
+  y: number;
+  pagina: number;
+}
+
+/**
+ * Zet losse tekstfragmenten (met positie) om naar een tabel.
+ * Regels = fragmenten met (ongeveer) dezelfde y; kolommen = grote horizontale tussenruimte.
+ * De eerste regel met minimaal 2 kolommen wordt als kolomkop gebruikt.
+ */
+export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; rows: string[][] } {
+  const schoon = items.filter((i) => i.str.trim().length > 0);
+  if (schoon.length === 0) {
+    throw new CSVError(
+      "leeg",
+      "Deze PDF bevat geen leesbare tekst. Waarschijnlijk is het een scan; gebruik een digitale export of Excel/CSV.",
+    );
+  }
+  const regels: PdfTekstItem[][] = [];
+  const gesorteerd = [...schoon].sort((a, b) => a.pagina - b.pagina || b.y - a.y || a.x - b.x);
+  for (const it of gesorteerd) {
+    const laatste = regels[regels.length - 1];
+    if (laatste && laatste[0].pagina === it.pagina && Math.abs(laatste[0].y - it.y) <= 3) laatste.push(it);
+    else regels.push([it]);
+  }
+  const naarCellen = (regel: PdfTekstItem[]) => {
+    const r = [...regel].sort((a, b) => a.x - b.x);
+    const cellen: string[] = [];
+    let vorigeX = -Infinity;
+    let vorigeEind = -Infinity;
+    for (const it of r) {
+      const gat = it.x - vorigeEind;
+      if (cellen.length === 0 || gat > 12) cellen.push(it.str.trim());
+      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + it.str.trim();
+      vorigeX = it.x;
+      vorigeEind = vorigeX + it.str.length * 5;
+    }
+    return cellen;
+  };
+  const tabel = regels.map(naarCellen);
+  const kopIdx = tabel.findIndex((c) => c.length >= 2);
+  if (kopIdx < 0) {
+    throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
+  }
+  const headers = tabel[kopIdx];
+  const kopTekst = headers.join("|");
+  const rows = tabel
+    .slice(kopIdx + 1)
+    .filter((c) => c.length >= 2 && c.join("|") !== kopTekst)
+    .map((c) => headers.map((_, i) => c[i] ?? ""));
+  return { headers, rows };
+}
+
+/** Leest een digitale PDF volledig in de browser en zet de tekst om naar headers + rijen. */
+export async function parsePdf(buffer: ArrayBuffer): Promise<{ headers: string[]; rows: string[][] }> {
+  const pdfjs = await import("pdfjs-dist");
+  const worker = await import("pdfjs-dist/build/pdf.worker.min.mjs?url");
+  pdfjs.GlobalWorkerOptions.workerSrc = worker.default;
+  let doc;
+  try {
+    doc = await pdfjs.getDocument({ data: new Uint8Array(buffer) }).promise;
+  } catch {
+    throw new CSVError("onleesbaar", "We konden deze PDF niet lezen. Controleer of het bestand niet beschadigd of beveiligd is.");
+  }
+  const items: PdfTekstItem[] = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    for (const it of content.items as { str?: string; transform?: number[] }[]) {
+      if (typeof it.str === "string" && it.transform) {
+        items.push({ str: it.str, x: it.transform[4], y: it.transform[5], pagina: p });
+      }
+    }
+  }
+  return pdfItemsNaarTabel(items);
+}
+
 // ---- Auto-detectie bestandstype op basis van bestandsnaam + headers ----
 export function detectBronType(bestandsnaam: string, headers: string[]): BronType | null {
   const name = bestandsnaam.toLowerCase();

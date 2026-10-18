@@ -12,8 +12,10 @@ import {
   detectBronType,
   deleteBron,
   isExcelBestand,
+  isPdfBestand,
   parseCSV,
   parseExcel,
+  parsePdf,
   upsertBron,
 } from "@/lib/bronnen";
 
@@ -226,7 +228,9 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
     }
     const { headers, rows } = isExcelBestand(file.name)
       ? await parseExcel(await file.arrayBuffer())
-      : parseCSV(await file.text());
+      : isPdfBestand(file.name)
+        ? await parsePdf(await file.arrayBuffer())
+        : parseCSV(await file.text());
     if (headers.length === 0) {
       upsertBron(makeFout(dossierId, file.name, "Bestand bevat geen kolomkoppen."));
       return;
