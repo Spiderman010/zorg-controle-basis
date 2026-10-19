@@ -126,6 +126,17 @@ export function deleteBron(id: string) {
   verwijderPdf(id);
 }
 
+/** Alle bronnen van alle dossiers (voor de back-up). */
+export function listAllBronnen(): BronBestand[] {
+  return read();
+}
+
+/** Verwijdert alle bronnen van één dossier, inclusief de bewaarde PDF's. */
+export function deleteBronnenVanDossier(dossier_id: string) {
+  for (const b of read()) if (b.dossier_id === dossier_id) verwijderPdf(b.id);
+  write(read().filter((b) => b.dossier_id !== dossier_id));
+}
+
 // ---- Opgeslagen mappings (klantprofiel per bedrijfsnaam + type) ----
 type MappingStore = Record<string, Record<string, string>>; // sleutel -> mapping
 function readMappings(): MappingStore {

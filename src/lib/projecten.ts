@@ -72,6 +72,25 @@ export function deleteProject(id: string) {
   write(read().filter((p) => p.id !== id));
 }
 
+/** Alle kostenplaatsen van alle dossiers (voor de back-up). */
+export function listAllProjecten(): Project[] {
+  return read();
+}
+
+/** Schrijft een kostenplaats met een bekende id: vervangt die met dezelfde id, of voegt toe. */
+export function upsertProject(p: Project) {
+  const all = read();
+  const idx = all.findIndex((x) => x.id === p.id);
+  if (idx >= 0) all[idx] = p;
+  else all.push(p);
+  write(all);
+}
+
+/** Verwijdert alle kostenplaatsen van één dossier. */
+export function deleteProjectsVanDossier(dossier_id: string) {
+  write(read().filter((p) => p.dossier_id !== dossier_id));
+}
+
 /** Weergavenaam: alleen de naam, zonder rol of opdrachtgever tussen haakjes. */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function projectLabel(p: Project, _alle?: Project[]): string {

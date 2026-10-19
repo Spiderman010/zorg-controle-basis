@@ -35,6 +35,20 @@ export function getDossier(id: string): Dossier | undefined {
   return listDossiers().find((d) => d.id === id);
 }
 
+/** Schrijft een dossier met een bekende id: vervangt het bestaande met dezelfde id, of voegt toe. */
+export function upsertDossier(d: Dossier) {
+  const all = listDossiers();
+  const idx = all.findIndex((x) => x.id === d.id);
+  if (idx >= 0) all[idx] = d;
+  else all.unshift(d);
+  localStorage.setItem(KEY, JSON.stringify(all));
+}
+
+/** Verwijdert alleen het dossier zelf; de bijbehorende kostenplaatsen en bronnen moeten apart worden opgeruimd. */
+export function deleteDossier(id: string) {
+  localStorage.setItem(KEY, JSON.stringify(listDossiers().filter((d) => d.id !== id)));
+}
+
 export function saveDossier(input: Omit<Dossier, "id" | "status" | "aangemaakt_op">): Dossier {
   const all = listDossiers();
   const dossier: Dossier = {

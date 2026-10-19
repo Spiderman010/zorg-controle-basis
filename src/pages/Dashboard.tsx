@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { listDossiers, type Dossier, type DossierStatus } from "@/lib/dossiers";
 import { listBronnen } from "@/lib/bronnen";
 import { voortgangDossier } from "@/lib/dossier-voortgang";
+import { VoorbeeldEnBackup } from "@/components/dashboard/VoorbeeldEnBackup";
 
 /** De volgende stap voor een dossier, in woorden (zelfde bron als de lijst op de dossierpagina). */
 function voortgang(dossierId: string) {
@@ -105,6 +106,8 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      <VoorbeeldEnBackup onChange={() => setDossiers(listDossiers())} />
 
       <Card>
         <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center">

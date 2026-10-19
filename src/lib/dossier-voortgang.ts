@@ -1,6 +1,14 @@
 // Wat ontbreekt nog per dossier, en wat is de volgende stap. Puur: krijgt de bronnen binnen,
 // leest zelf niets uit de opslag. Gebruikt de bestaande validatie (valideerBron).
-import { ALLE_BRONTYPEN, BRON_LABELS, valideerBron, type BronBestand, type BronType } from "./bronnen";
+import { ALLE_BRONTYPEN, BRON_LABELS, leesGedeclareerdeUren, valideerBron, type BronBestand, type BronType } from "./bronnen";
+
+/** Regelindexen die een kostenplaats nodig hebben. Gedeclareerde regels van een stroom die niet in uren declareert (Wlz-verblijf) niet. */
+function regelsMetKostenplaats(b: BronBestand): number[] {
+  if (b.type === "gedeclareerde_uren") {
+    return leesGedeclareerdeUren(b).filter((r) => r.toepasbaar !== "nee").map((r) => r.regel);
+  }
+  return b.rijen.map((_, i) => i);
+}
 
 export type BronTypeZonderNiet = Exclude<BronType, "niet_gebruiken">;
 
@@ -69,7 +77,7 @@ export function voortgangDossier(bronnen: BronBestand[], dossierId: string): Dos
       status = "niet_bevestigd";
     } else {
       kolommen = van.some((b) => valideerBron(b).fouten.length > 0);
-      uren = UREN_MET_KOSTENPLAATS.includes(type) && van.some((b) => b.rijen.some((_, i) => !b.projecttoewijzingen?.[i]));
+      uren = UREN_MET_KOSTENPLAATS.includes(type) && van.some((b) => regelsMetKostenplaats(b).some((i) => !b.projecttoewijzingen?.[i]));
       if (kolommen || uren) status = "koppeling_onvolledig";
     }
     return {
