@@ -27,6 +27,7 @@ import {
 import { listProjecten } from "@/lib/projecten";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 import { UrenVerbandKaart } from "@/components/controle/UrenVerbandKaart";
+import { MixSignaal } from "@/components/controle/MixSignaal";
 import { resturenTonen } from "@/lib/controle-weergave";
 
 const CHECK_CODES: Record<CheckId, string> = {
@@ -304,14 +305,7 @@ export default function DossierControle() {
                 </div>
               </>
             )}
-            <div className="flex items-start gap-3 border-t pt-3">
-              <StatusBadge status={mixSignaal.status} />
-              <div className="text-sm">
-                <p className="font-medium">Signaal: meerdere wettelijke kaders</p>
-                <p className="text-muted-foreground">{mixSignaal.message}</p>
-                <p className="mt-1 text-xs text-muted-foreground">Informatief signaal — telt niet mee in de hoofdscore.</p>
-              </div>
-            </div>
+            <MixSignaal signaal={mixSignaal} />
           </CardContent>
         </Card>
       </section>
