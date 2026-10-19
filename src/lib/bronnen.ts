@@ -266,8 +266,11 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     let vorigeEind = -Infinity;
     for (const it of r) {
       const gat = it.x - vorigeEind;
-      if (cellen.length === 0 || gat > 12) cellen.push(it.str.trim());
-      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + it.str.trim();
+      const s = it.str.trim();
+      // Vetgedrukte tekst staat in sommige PDF's dubbel op dezelfde plek: overslaan.
+      if (cellen.length > 0 && cellen[cellen.length - 1].endsWith(s) && it.x - vorigeX < 2) continue;
+      if (cellen.length === 0 || gat > 12) cellen.push(s);
+      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + s;
       vorigeX = it.x;
       vorigeEind = vorigeX + it.str.length * 5;
     }
@@ -276,8 +279,15 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
   const tabel = regels.map(naarCellen);
   const factuur = herkenFactuur(regels, tabel);
   if (factuur) return factuur;
-  const loon = herkenLoonspecificatie(tabel);
-  if (loon) return loon;
+  // Loonstroken: per pagina één medewerker (verzameldocument).
+  const paginas = [...new Set(regels.map((r) => r[0].pagina))];
+  const loonRijen: string[][] = [];
+  for (const p of paginas) {
+    const pt = regels.map((r, i) => (r[0].pagina === p ? tabel[i] : null)).filter((c): c is string[] => !!c);
+    const l = herkenLoonspecificatie(pt);
+    if (l) loonRijen.push(...l.rows);
+  }
+  if (loonRijen.length > 0) return { headers: [...LOON_KOLOMMEN], rows: loonRijen };
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
