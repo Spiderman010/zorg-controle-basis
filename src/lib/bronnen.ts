@@ -530,9 +530,19 @@ const VELD_SYNONIEMEN: Record<string, string[]> = {
 
 export function suggestMapping(type: Exclude<BronType, "niet_gebruiken">, headers: string[]): Record<string, string> {
   const result: Record<string, string> = {};
+  // Herkende factuur/loonstrook: vaste koppeling, zodat "bedrag" nooit op een naamkolom valt.
+  if (headers.join("|") === FACTUUR_KOLOMMEN.join("|")) {
+    const relatieVeld = type === "zorgopbrengsten" ? "rekening_of_categorie" : "leverancier_of_omschrijving";
+    return { periode: "Periode", bedrag: "Bedrag", [relatieVeld]: type === "zorgopbrengsten" ? "Debiteur" : "Omschrijving" };
+  }
+  if (headers.join("|") === LOON_KOLOMMEN.join("|")) {
+    return { periode: "Periode", bedrag: "Bedrag", looncomponent: "Looncomponent", medewerker: "Medewerker" };
+  }
   for (const veld of [...VERPLICHTE_VELDEN[type], ...(OPTIONELE_VELDEN[type] ?? [])]) {
     const syns = VELD_SYNONIEMEN[veld] || [veld];
-    const match = headers.find((h) => syns.some((s) => h.toLowerCase().includes(s)));
+    const match =
+      headers.find((h) => h.toLowerCase() === veld) ??
+      headers.find((h) => syns.some((s) => h.toLowerCase().includes(s)));
     if (match) result[veld] = match;
   }
   return result;
