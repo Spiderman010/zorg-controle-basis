@@ -71,6 +71,21 @@ export interface NonProductiveHoursRecord extends BaseRecord {
   absence_type?: string;
 }
 
+/**
+ * Gedeclareerde uren (declaratie of factuur), al omgerekend naar uren.
+ * Wordt alleen gebruikt voor de aparte uren-verbandcontrole; telt niet mee in de hoofdscore.
+ */
+export interface DeclaredHoursRecord extends BaseRecord {
+  /** In uren; negatief bij een correctie of creditnota. */
+  declared_hours: number;
+  /** Financieringsstroom zoals aangeleverd (vrije tekst). */
+  stream?: string;
+  /** Declareert deze stroom in uren? "nee" = niet vergelijkbaar (bijv. Wlz-verblijf); "onzeker" = nog niet vastgesteld. */
+  in_hours: "ja" | "nee" | "onzeker";
+  /** Toerekening aan een project; leeg = "Algemeen". */
+  project_id?: string;
+}
+
 /** Container voor één dossier/periode dat gecontroleerd wordt. */
 export interface Dataset {
   revenue?: RevenueRecord[];
@@ -78,6 +93,7 @@ export interface Dataset {
   external_hire?: ExternalHireRecord[];
   paid_hours?: PaidHoursRecord[];
   direct_hours?: DirectHoursRecord[];
+  declared_hours?: DeclaredHoursRecord[];
   non_productive_hours?: NonProductiveHoursRecord[];
   /** Optionele 'tweede bron' totalen voor aansluitcontroles (bv. uit grootboek vs. subadministratie) */
   secondary_totals?: {

@@ -15,6 +15,7 @@ import {
   computeFinancieringsMix,
   computeProjectAnalyse,
   computeSollOmzet,
+  computeUrenVerband,
   financieringsSignaal,
   runChecks,
   runTrendChecksFromDataset,
@@ -25,6 +26,7 @@ import {
 } from "@/core";
 import { listProjecten } from "@/lib/projecten";
 import { StatusBadge } from "@/components/controle/StatusBadge";
+import { UrenVerbandKaart } from "@/components/controle/UrenVerbandKaart";
 
 const CHECK_CODES: Record<CheckId, string> = {
   revenue_reconciliation: "V1-C01",
@@ -159,8 +161,9 @@ export default function DossierControle() {
     const mixSignaal = financieringsSignaal(mix);
     const projectAnalyse = projecten.length > 0 ? computeProjectAnalyse(dataset, projecten) : [];
     const soll = computeSollOmzet(dataset, sollConfig);
+    const urenVerband = computeUrenVerband(dataset, { projecten });
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, byId };
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId };
   }, [d]);
 
   if (!d) {
@@ -173,7 +176,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, soll, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, soll, urenVerband, byId } = data;
   const sollPerProject = Object.fromEntries(soll.regels.map((r) => [r.project_id, r]));
   const toonSoll = soll.regels.some((r) => r.tarief !== undefined);
   const m = metrics;
@@ -302,6 +305,9 @@ export default function DossierControle() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Uren-controle: gedeclareerd tegen gewerkt (apart, niet in de hoofdscore) */}
+      <UrenVerbandKaart resultaat={urenVerband} />
 
       {/* Projecten */}
       {projectAnalyse.length > 0 && (

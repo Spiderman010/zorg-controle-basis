@@ -6,3 +6,4 @@ export * from "./trends";
 export * from "./financiering";
 export * from "./projecten";
 export * from "./sollomzet";
+export * from "./urenverband";
