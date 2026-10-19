@@ -11,42 +11,51 @@
 - Stap 2.0.3 gebouwd: eenheid-kiezer bij het koppelen van kolommen (gedeclareerde uren) en toepasbaarheid per stroom (`declareertInUren`: ja, nee of onzeker; Wlz-verblijf grijs)
 - Stap 2.0.3b gebouwd: gedeclareerde uren koppelen aan een kostenplaats in de stap Classificatie, met een voorstel dat alleen kiest bij één passende kostenplaats
 - `ROADMAP.md` staat op versie 0.6
+- Stap 2.0.4 gebouwd: verbandcontrole gedeclareerde tegen gewerkte uren per kostenplaats (`src/core/urenverband.ts`), met de kaart "Uren-controle" op het scherm Controle
+- Besluit: de uren-controle telt mee in de hoofdscore als tiende kerncontrole (V1-C10). Toestemming voor wijzigingen aan `src/core/` en de scoreberekening is gegeven; de hoofdscore en de dekking gaan nu over 10 controles
 
 ## Huidige staat
-- **Branch:** `eenheid-en-koppeling` (vanaf `main`, na PR #3), nog niet gemerged
-- **Laatste commit:** de laatste commit op de branch `eenheid-en-koppeling`
-- **Pull request:** nog niet gemaakt en niet gemerged; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...eenheid-en-koppeling
+- **Branch:** `urenverband` (vanaf `main`, na PR #4), nog niet gemerged
+- **Laatste commit:** de laatste commit op de branch `urenverband`
+- **Pull request:** nog niet gemaakt en niet gemerged; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...urenverband
 - **Deploy status:** Lovable-preview, niet gecontroleerd
 - **Runtime-fouten:** niet gemeten
-- **Tests:** 19 testbestanden en 150 tests, alles groen; typecheck zonder fouten, lint 0 fouten (2 bestaande waarschuwingen), build in orde
+- **Tests:** 22 testbestanden en 186 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
 
 ## Openstaande taken
-- [ ] Pull request maken van `eenheid-en-koppeling` naar `main` en mergen
+- [ ] Pull request maken en mergen (branch `urenverband` naar `main`)
+- [ ] Het fictieve bestand uit "Volgende sessie" doorlopen, en de kaart "Uren-controle" en de score in het scherm Controle nakijken
 - [ ] `package-lock.json` committen (`npm install` is lokaal gedraaid)
 - [ ] `Journaalposten.pdf` opnieuw uploaden en de ruwe uitvoer van `pdfItemsNaarTabel()` (geanonimiseerd) bewaren als testvoorbeeld
-- [ ] Open vragen 1, 2, 9 en 12 in `ROADMAP.md` beantwoorden (grootboekexport, vergelijking van het loonjournaal, Wlz thuis in uren, declaratiebestand)
-- [ ] Daarna stap 2.0.4: de nieuwe kerncontrole per project in de rekenkern (`src/core/`; toestemming is gegeven)
+- [ ] Open vragen 1, 2, 9, 12 en 13 in `ROADMAP.md` beantwoorden
+- [ ] Daarna 2.0.5: scherm "Uren-controle" (uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt)
 
 ## Bekende problemen
-- 4 van de 9 kerncontroles blijven grijs: `secondary_totals` wordt nergens gevuld (alleen op de debug-pagina)
+- 4 van de 10 kerncontroles blijven grijs: `secondary_totals` wordt nergens gevuld (alleen op de debug-pagina)
 - `npm ci` faalt tot de lockfile is gecommit
 - Lint: 2 fouten in shadcn-bestanden (`command.tsx`, `textarea.tsx`); `npm audit`: 17 hoge meldingen in afhankelijkheden
 - Opslag alleen in de browser (`localStorage`): een gewist profiel kost dossiers
 
 ## Volgende sessie: begin hier
-Draai `git pull` en `npx vitest run` (verwacht 19 testbestanden en 150 tests). Probeer daarna in de Lovable-preview het fictieve bestand `Declaratie september.csv` (kolommen Periode, Stroom en Gedeclareerde minuten; regels: Zvw wijkverpleging 25200, Wmo 19800, Wlz verblijf 31) in een testdossier met twee kostenplaatsen (stroom Zvw en stroom Wmo). Controleer: de keuzelijst "Eenheid van de aantallen" bij het koppelen van kolommen, de melding over Wlz-verblijf bij het valideren, het koppelpaneel in de stap Classificatie en de knop "Koppel automatisch op stroom". Begin daarna met stap 2.0.4, de controle in de rekenkern.
+Draai `git pull` en `npx vitest run` (verwacht 22 testbestanden en 186 tests). Open in de Lovable-preview het scherm Controle van het testdossier met het fictieve declaratiebestand en directe uren (aan kostenplaatsen gekoppeld). Controleer de kaart "Uren-controle" en dat de controle V1-C10 in de lijst en de hoofdscore staat. Begin daarna met 2.0.5.
 
 ## Bestanden gewijzigd
-- `ROADMAP.md` — versie 0.6: 2.0.3 en 2.0.3b afgevinkt, logboekregel 0.6
+- `ROADMAP.md` — versie 0.8: 2.0.4 afgevinkt, uren-controle als V1-C10 in de hoofdscore
 - `HANDOFF.md` — deze sessie bijgewerkt (gedaan, huidige staat, openstaande taken, bestanden)
-- `src/components/bronnen/ClassificatieTab.tsx` — stap Classificatie toont gedeclareerde uren en het koppelpaneel
-- `src/components/bronnen/MappingTab.tsx` — keuzelijst "Eenheid van de aantallen" voor gedeclareerde uren (automatisch of handmatig)
-- `src/components/bronnen/ToewijzingPaneel.tsx` — nieuw: paneel om gedeclareerde uren aan een kostenplaats te koppelen
-- `src/components/bronnen/ToewijzingPaneel.test.tsx` — nieuw: tests voor het paneel
-- `src/lib/bronnen.ts` — eenheden omrekenen en `declareertInUren` (toepasbaarheid per stroom)
-- `src/lib/eenheid-toepasbaarheid.test.ts` — nieuw: tests voor eenheden en toepasbaarheid
-- `src/lib/uren-toewijzing.ts` — nieuw: voorstel voor koppeling uren-kostenplaats op basis van de stroom; kiest niets bij twijfel
-- `src/lib/uren-toewijzing.test.ts` — nieuw: tests voor het voorstel
+- `src/core/urenverband.ts` — nieuw: verbandcontrole gedeclareerde tegen gewerkte uren per kostenplaats (V1-C10)
+- `src/core/__tests__/urenverband.test.ts` — nieuw: tests voor de verbandcontrole
+- `src/core/index.ts` — exporteert de verbandcontrole
+- `src/core/types.ts` — typen voor de verbandcontrole en de configuratie
+- `src/core/checks.ts` — de uren-controle als tiende kerncontrole in de hoofdscore
+- `src/core/__tests__/financiering.test.ts` — verwacht nu 10 kerncontroles (was 9)
+- `src/core/__tests__/projecten.test.ts` — verwacht nu 10 kerncontroles (was 9)
+- `src/core/__tests__/sollomzet.test.ts` — verwacht nu 10 kerncontroles (was 9)
+- `src/lib/datasetBuilder.ts` — gedeclareerde uren, omgerekend naar uren en per kostenplaats, in de dataset
+- `src/lib/urenverband-dataset.test.ts` — nieuw: tests voor de dataset van de verbandcontrole
+- `src/components/controle/UrenVerbandKaart.tsx` — nieuw: kaart "Uren-controle" op het scherm Controle
+- `src/components/controle/UrenVerbandKaart.test.tsx` — nieuw: tests voor de kaart
+- `src/pages/DossierControle.tsx` — toont de kaart "Uren-controle" en V1-C10 in de lijst
+- `src/pages/DossierRapportage.tsx` — neemt V1-C10 op in het rapport
 
 ## Belangrijke context
 - Rol: de app is een onafhankelijke tweede lijn. Uren en bedragen komen van de klant; de app corrigeert of fiatteert niets

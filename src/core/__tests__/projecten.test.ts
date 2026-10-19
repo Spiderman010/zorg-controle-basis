@@ -123,6 +123,6 @@ describe("computeProjectAnalyse", () => {
     computeProjectAnalyse(ds, PROJECTEN);
     const met = summarize(runChecks(ds));
     expect(met).toEqual(zonder);
-    expect(met.total).toBe(9);
+    expect(met.total).toBe(10);
   });
 });

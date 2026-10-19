@@ -5,11 +5,12 @@ import type {
   PayrollCostRecord,
   ExternalHireRecord,
   PaidHoursRecord,
+  DeclaredHoursRecord,
   DirectHoursRecord,
   NonProductiveHoursRecord,
 } from "@/core";
 import { normalizeStroom, detectStroom } from "@/core";
-import { listBronnen, parseGetal, type BronBestand, type BronType } from "@/lib/bronnen";
+import { leesGedeclareerdeUren, listBronnen, parseGetal, type BronBestand, type BronType } from "@/lib/bronnen";
 
 /** Parse Nederlands of internationaal getal naar number; NaN als ongeldig. */
 function parseNumber(raw: string | undefined): number {
@@ -160,6 +161,30 @@ export function buildDataset(dossier_id: string): { dataset: Dataset; bronnen: B
       });
     }
     ds.direct_hours = rec;
+  }
+
+  // Gedeclareerde uren — omgerekend naar uren, aan een kostenplaats gekoppeld indien toegewezen
+  const declBronnen = perType["gedeclareerde_uren"] || [];
+  if (declBronnen.length) {
+    const rec: DeclaredHoursRecord[] = [];
+    for (const b of declBronnen) {
+      for (const r of leesGedeclareerdeUren(b)) {
+        const nietInUren = r.toepasbaar === "nee";
+        const onleesbaar = !nietInUren && r.uren === undefined; // onleesbaar aantal of dagen
+        rec.push({
+          dossier_id,
+          period: r.periode,
+          source_file: b.bestandsnaam,
+          import_status: onleesbaar ? "invalid" : "valid",
+          declared_hours: nietInUren ? 0 : (r.uren ?? 0),
+          stream: r.stroom,
+          in_hours: r.toepasbaar,
+          project_id: b.projecttoewijzingen?.[r.regel],
+          is_correction: r.aantal < 0 ? true : undefined,
+        });
+      }
+    }
+    ds.declared_hours = rec;
   }
 
   // Niet-productieve uren

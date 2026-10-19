@@ -1,6 +1,6 @@
 # Roadmap — Zorg Controle Basis
 
-**Versie:** 0.6 — 19 oktober 2026
+**Versie:** 0.8 — 19 oktober 2026
 **Status:** concept, wordt herzien aan het einde van elke sessie (zie "Herzien")
 
 ## Doel
@@ -72,7 +72,7 @@ Gemeten op `main`, commit `4a1f9b4` (19 oktober 2026), vóór de patch met randg
 | `npm audit` (productie) | 19 meldingen, waarvan 17 hoog en 0 kritiek |
 | Niet gemeten | testdekking van `bronnen.ts`; import met echte `Journaalposten.pdf` |
 
-Stand na stap 2.0.3 en 2.0.3b: 19 testbestanden en 150 tests, typecheck, lint en build in orde.
+Stand na stap 2.0.4: 22 testbestanden en 186 tests, typecheck en build in orde, lint ongewijzigd (2 fouten in shadcn-bestanden, 12 waarschuwingen).
 
 ## Wat de app nu heeft, en wat ontbreekt
 
@@ -81,16 +81,16 @@ Stand na stap 2.0.3 en 2.0.3b: 19 testbestanden en 150 tests, typecheck, lint en
 | Verhoudingscontroles (personeelslasten, directe uren, niet-productieve uren, resturen, soll-omzet) | aanwezig |
 | Trendcontroles (4, tegen de vorige periode) | aanwezig |
 | Financieringsmix, projecttoerekening, dubbele facturen, importvalidatie | aanwezig |
-| Zichtbaar hoeveel controles uitvoerbaar zijn ("x van 9") en een betrouwbaarheidsniveau | aanwezig |
+| Zichtbaar hoeveel controles uitvoerbaar zijn ("x van 10") en een betrouwbaarheidsniveau | aanwezig |
 | Rapportage met samenvatting, actiepunten en PDF via afdrukken | aanwezig |
-| **Aansluiting op een tweede bron** (omzet, personeel, inhuur, betaalde uren) | **kern is er, maar `secondary_totals` wordt in de echte app nergens gevuld: 4 van de 9 kerncontroles blijven grijs** |
+| **Aansluiting op een tweede bron** (omzet, personeel, inhuur, betaalde uren) | **kern is er, maar `secondary_totals` wordt in de echte app nergens gevuld: 4 van de 10 kerncontroles blijven grijs** |
 | **Gedeclareerde uren** (het begrip, de import en de controle) | **ontbreekt: een zorgopbrengst heeft alleen een bedrag en een stroom, geen uren. De soll-omzetcontrole vergelijkt alleen euro's** |
 | Verschillen verklaren (afkapregel, bekende oorzaak) | ontbreekt |
 | Herkomst per bron (systeem, soort export, exportdatum, periode) | beperkt: bestandsnaam en uploadmoment |
 | Ruwe en afgeleide waarden naast elkaar | ontbreekt |
 | Oordelen (classificatie) met datum en reden | ontbreekt |
 
-Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code niet hoger worden dan "Beperkt tot gemiddeld", en de score deelt alleen door de uitvoerbare controles. Dit lossen we op in mijlpaal 2.
+Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code niet hoger worden dan "Gemiddeld" (na stap 2.0.4 maximaal 6 van de 10 kerncontroles uitvoerbaar), en de score deelt alleen door de uitvoerbare controles. Dit lossen we op in mijlpaal 2.
 
 ## Fase 0 — Fundament (eerst, klein)
 
@@ -127,8 +127,8 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 - [ ] 2.0.2 Ingang factuurregels (aantal en eenheid), nodig voor PGB. Test: een fictieve factuur-PDF
 - [x] 2.0.3 Eenheden omrekenen en toepasbaarheid per stroom (Wlz-verblijf grijs), met een eenheid-kiezer in de app voor bronnen zonder herkenbare eenheid. Test: de acht proefsituaties als vaste tests (gebouwd; Wlz zonder verblijf geldt als onzeker en telt mee met een melding)
 - [x] 2.0.3b Gedeclareerde uren aan een project koppelen (stap Classificatie), nodig voor de vergelijking per project (gebouwd: eigen paneel met per-regel keuze, bulkkeuze en "Koppel automatisch op stroom")
-- [ ] 2.0.4 Nieuwe kerncontrole per project met asymmetrische drempels en gesaldeerde correcties (raakt `src/core/`). Test: een fictief dossier met omzet, uren en declaraties; klopt score en dekking
-- [ ] 2.0.5 Scherm "Uren-controle": kleur per project, uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt bij afwijking. Test: handmatige doorloop van het fictieve dossier (10 minuten)
+- [x] 2.0.4 Nieuwe kerncontrole per project met asymmetrische drempels en gesaldeerde correcties (raakt `src/core/`). Test: een fictief dossier met omzet, uren en declaraties; klopt score en dekking (gebouwd in `src/core/urenverband.ts`: telt mee in de hoofdscore als kerncontrole V1-C10, besluit van Naoufal op 19 oktober; de eindstatus is de slechtste kostenplaats; standaarddrempels 1% en 3% bij te veel, 5% en 15% bij te weinig, per stroom instelbaar in de code; alleen toevoegingen aan de kern)
+- [ ] 2.0.5 Scherm "Uren-controle": kleur per project, uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt bij afwijking. Test: handmatige doorloop van het fictieve dossier (10 minuten). Een basiskaart staat al in het scherm Controle (tabel per kostenplaats met status en toelichting); nog te doen: uitleg in gewone taal, "wat nu?" en uitsplitsing per cliënt
 - [ ] 2.0.6 Aparte tariefcontrole: omzet per gedeclareerd uur tegen het afgesproken tarief
 - [ ] 2.0.7 Optionele derde waarde: geplande uren (wijkverpleging)
 - [ ] 2.0.8 Systeem-export (bijvoorbeeld Nedap Ons) als bron, zodra er een voorbeeld is
@@ -153,7 +153,7 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 ## Mijlpaal 3 — Rapportage en klantweergave
 
 - [ ] 3.1 Rapport vermeldt de herkomst van de uren en bedragen en dat ze door de klant zijn aangeleverd en niet zelfstandig zijn vastgesteld
-- [ ] 3.2 Dekking ("x van 9 controles uitgevoerd") op gelijke hoogte met de score tonen, zodat een hoge score bij weinig uitgevoerde controles niet geruststelt
+- [ ] 3.2 Dekking ("x van 10 controles uitgevoerd") op gelijke hoogte met de score tonen, zodat een hoge score bij weinig uitgevoerde controles niet geruststelt
 - [ ] 3.3 Ruwe en afgeleide waarden naast elkaar tonen en afgeleide waarden markeren
 - [ ] 3.4 Oordelen (classificaties) vastleggen met datum en reden
 - [ ] 3.5 PDF-rapport met bronverwijzing, datum en versie van de rekenkern
@@ -185,7 +185,8 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 | 8 | Zit CBS-benchmarking al in de app? | Claude | uitzoeken |
 | 9 | Declareert Wlz thuis (VPT of MPT) in uren? Niet nagegaan. De app behandelt Wlz zonder verblijf nu als onzeker: de uren tellen mee, met een melding | Naoufal | open |
 | 10 | Telt reistijd mee bij Wmo? Hangt af van de afspraken met de gemeente | Naoufal | open |
-| 11 | Zijn de drempels uit de sectie "Kerntaak" goed, of liever andere? | Naoufal | voorstel |
+| 11 | Zijn de drempels uit de sectie "Kerntaak" goed, of liever andere? Ze staan nu als standaard in `URENVERBAND_DREMPELS`; per stroom instelbaar in de code, nog niet in een scherm | Naoufal | voorstel |
+| 13 | Telt de uren-controle mee in de hoofdscore? Besloten: ja, als kerncontrole V1-C10. De eindstatus is de slechtste kostenplaats; herzien na de proef met een echte klant (2.0.9) | Naoufal | besloten |
 | 12 | Een geanonimiseerd declaratiebestand van een klant, voor 2.0.1 | Naoufal | open |
 
 ## Herzien
@@ -206,3 +207,5 @@ Aan het einde van elke sessie, samen met `HANDOFF.md`:
 | 2026-10-19 | 0.4 | Kerntaak toegevoegd: verbandcontrole gedeclareerde tegen gewerkte uren (onderdeel 2.0, nu eerst in mijlpaal 2). Vastgelegd: vier stromen, niveau per project, directe uren zonder reistijd, asymmetrische drempels, factuurregels eerder voor PGB, wijkverpleging declareert op planning. Fictieve proef van acht situaties. Open vragen 9 tot 12 |
 | 2026-10-19 | 0.5 | Getalfout opgelost (decimale punt werd 10 tot 100 keer te groot gelezen). Onderdeel 2.0.0 en 2.0.1 afgerond. Onderdeel 2.0.3b toegevoegd (koppeling aan projecten). Stand: 16 testbestanden, 121 tests |
 | 2026-10-19 | 0.6 | Stap 2.0.3 (eenheid-kiezer en toepasbaarheid per stroom) en 2.0.3b (koppeling aan kostenplaatsen) afgerond. Stand: 19 testbestanden, 150 tests. Volgende: 2.0.4, de controle in de rekenkern |
+| 2026-10-19 | 0.7 | Stap 2.0.4 afgerond: kerncontrole gedeclareerde tegen gewerkte uren per kostenplaats, apart getoond in het scherm Controle en niet in de hoofdscore. Dossierketen van bronnen naar controle getest met een fictief dossier. Stand: 22 testbestanden, 182 tests. Open vraag 13 toegevoegd |
+| 2026-10-19 | 0.8 | Besluit open vraag 13: de uren-controle telt mee in de hoofdscore als kerncontrole V1-C10 (tien kerncontroles). Dossiers zonder gedeclareerde uren behouden dezelfde score (de controle is dan grijs). Vier bestaande tests aangepast van 9 naar 10 kerncontroles. Stand: 22 testbestanden, 186 tests |

@@ -105,7 +105,7 @@ describe("sollOmzetCheck (V1-C09)", () => {
     const c = checks.find((x) => x.id === "soll_omzet_check")!;
     expect(c.status).toBe("grijs");
     const s = summarize(checks);
-    expect(s.total).toBe(9);
+    expect(s.total).toBe(10);
     expect(s.grijs).toBeGreaterThan(0);
   });
 
@@ -131,7 +131,7 @@ describe("sollOmzetCheck (V1-C09)", () => {
     const s = summarize(checks);
     const c = checks.find((x) => x.id === "soll_omzet_check")!;
     expect(c.status).toBe("groen");
-    expect(s.total).toBe(9);
+    expect(s.total).toBe(10);
   });
 
   it("bestaande 8 controles veranderen niet door de soll-optie", () => {

@@ -1,10 +1,13 @@
 import type { Dataset, CheckResult, CheckStatus, CheckId } from "./types";
 import { computeMetrics } from "./calculations";
 import { sollOmzetCheck, type SollOmzetConfig } from "./sollomzet";
+import { urenVerbandCheck, type UrenVerbandConfig } from "./urenverband";
 
 export interface RunChecksOptions {
   /** Configuratie voor de soll-omzetcontrole (V1-C09); zonder tarieven wordt die grijs. */
   soll?: SollOmzetConfig;
+  /** Configuratie voor de verbandcontrole gedeclareerde tegen gewerkte uren (V1-C10): kostenplaatsen en drempels. */
+  urenverband?: UrenVerbandConfig;
 }
 
 const GREY_MSG = (source: string) => `Niet uitvoerbaar – ${source} ontbreekt`;
@@ -200,10 +203,13 @@ export function runChecks(ds: Dataset, opts?: RunChecksOptions): CheckResult[] {
   // 9. Soll-omzet: directe uren × tarief vs verantwoorde omzet (grijs zonder dekkend tarief)
   results.push(sollOmzetCheck(ds, opts?.soll ?? {}));
 
+  // 10. Gedeclareerde uren tegen gewerkte directe uren, per kostenplaats (grijs zonder gedeclareerde of directe uren)
+  results.push(urenVerbandCheck(ds, opts?.urenverband ?? {}));
+
   return results;
 }
 
-/** De 9 kerncontroles die meetellen in de hoofdscore. Trendcontroles tellen niet mee. */
+/** De 10 kerncontroles die meetellen in de hoofdscore. Trendcontroles tellen niet mee. */
 export const CORE_CHECK_IDS: CheckId[] = [
   "revenue_reconciliation",
   "payroll_reconciliation",
@@ -214,6 +220,7 @@ export const CORE_CHECK_IDS: CheckId[] = [
   "non_productive_hours_ratio",
   "remaining_hours_analysis",
   "soll_omzet_check",
+  "declared_hours_check",
 ];
 
 /** Gewichten per status. Grijs telt niet mee. */

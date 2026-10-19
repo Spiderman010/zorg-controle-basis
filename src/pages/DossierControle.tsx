@@ -15,6 +15,7 @@ import {
   computeFinancieringsMix,
   computeProjectAnalyse,
   computeSollOmzet,
+  computeUrenVerband,
   financieringsSignaal,
   runChecks,
   runTrendChecksFromDataset,
@@ -25,6 +26,7 @@ import {
 } from "@/core";
 import { listProjecten } from "@/lib/projecten";
 import { StatusBadge } from "@/components/controle/StatusBadge";
+import { UrenVerbandKaart } from "@/components/controle/UrenVerbandKaart";
 
 const CHECK_CODES: Record<CheckId, string> = {
   revenue_reconciliation: "V1-C01",
@@ -36,6 +38,7 @@ const CHECK_CODES: Record<CheckId, string> = {
   non_productive_hours_ratio: "V1-C07",
   remaining_hours_analysis: "V1-C08",
   soll_omzet_check: "V1-C09",
+  declared_hours_check: "V1-C10",
 };
 
 const CHECK_FORMULES: Record<CheckId, string> = {
@@ -48,6 +51,7 @@ const CHECK_FORMULES: Record<CheckId, string> = {
   non_productive_hours_ratio: "niet-productieve uren / betaalde uren",
   remaining_hours_analysis: "(betaalde − direct − niet-productief) / betaalde",
   soll_omzet_check: "(omzet − directe uren × tarief) / (directe uren × tarief)",
+  declared_hours_check: "(gedeclareerde − gewerkte directe uren) / gewerkte directe uren, per kostenplaats",
 };
 
 const CHECK_BRONNEN: Record<CheckId, string> = {
@@ -60,6 +64,7 @@ const CHECK_BRONNEN: Record<CheckId, string> = {
   non_productive_hours_ratio: "Betaalde uren, niet-productieve uren",
   remaining_hours_analysis: "Betaalde, directe en niet-productieve uren",
   soll_omzet_check: "Zorgopbrengsten, directe uren, tarieven (projecten/standaard)",
+  declared_hours_check: "Gedeclareerde uren, directe uren, kostenplaatsen",
 };
 
 const CHECK_VERVOLG: Record<CheckId, string> = {
@@ -72,6 +77,7 @@ const CHECK_VERVOLG: Record<CheckId, string> = {
   non_productive_hours_ratio: "Bekijk verzuim, verlof en scholing.",
   remaining_hours_analysis: "Onderzoek niet-toegewezen uren en hun kosten.",
   soll_omzet_check: "Onderzoek tariefverschillen, niet-gedeclareerde uren of omzet zonder uren.",
+  declared_hours_check: "Onderzoek per kostenplaats: te veel gedeclareerd (risico op terugvordering) of uren zonder declaratie (gemiste omzet).",
 };
 
 function fmtEUR(n: number | undefined) {
@@ -152,15 +158,16 @@ export default function DossierControle() {
     const metrics = computeMetrics(dataset);
     const projecten = listProjecten(d.id);
     const sollConfig = { projecten, standaard_tarief: d.standaard_tarief };
-    const checks = runChecks(dataset, { soll: sollConfig });
+    const checks = runChecks(dataset, { soll: sollConfig, urenverband: { projecten } });
     const trends = runTrendChecksFromDataset(dataset);
     const summary = summarize(checks);
     const mix = computeFinancieringsMix(dataset);
     const mixSignaal = financieringsSignaal(mix);
     const projectAnalyse = projecten.length > 0 ? computeProjectAnalyse(dataset, projecten) : [];
     const soll = computeSollOmzet(dataset, sollConfig);
+    const urenVerband = computeUrenVerband(dataset, { projecten });
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, byId };
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId };
   }, [d]);
 
   if (!d) {
@@ -173,7 +180,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, soll, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, soll, urenVerband, byId } = data;
   const sollPerProject = Object.fromEntries(soll.regels.map((r) => [r.project_id, r]));
   const toonSoll = soll.regels.some((r) => r.tarief !== undefined);
   const m = metrics;
@@ -302,6 +309,9 @@ export default function DossierControle() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Uren-controle: gedeclareerd tegen gewerkt (apart, niet in de hoofdscore) */}
+      <UrenVerbandKaart resultaat={urenVerband} />
 
       {/* Projecten */}
       {projectAnalyse.length > 0 && (
