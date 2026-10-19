@@ -21,6 +21,7 @@ import {
   bewaarPdf,
   getPdf,
   upsertBron,
+  wijzigBronType,
   vindDubbeleFacturen,
 } from "@/lib/bronnen";
 
@@ -254,7 +255,7 @@ function BestandsRij({
         <Select
           value={bron.type}
           onValueChange={(v) => {
-            upsertBron({ ...bron, type: v as BronType, type_auto_herkend: false, type_bevestigd: true });
+            upsertBron(wijzigBronType(bron, v as BronType));
             onChange();
           }}
         >
