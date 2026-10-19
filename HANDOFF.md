@@ -17,6 +17,8 @@
 - Gebruiksvriendelijkheid, vier onderdelen op de branch `gebruiksvriendelijk`: (1) centrale Nederlandse veldnamen en uitleg, "kostenplaats" in de UI, "Diagnose" uit het menu; (2) "Wat ontbreekt nog?" per dossier met één volgende stap; (3) kolom "Kostenplaats of cliënt" met koppelen op naam en koppelen per medewerker; (4) voorbeelddossier Zorg Voorbeeld BV en back-up maken/terugzetten
 - Wlz-verblijfregels krijgen geen kostenplaats nodig in de voortgang (fout in onderdeel 2 gevonden en gerepareerd)
 - `ROADMAP.md` staat op versie 0.10; 4.1 (back-up) is afgevinkt
+- Bulkactie "Alle regels naar kostenplaats" vraagt nu bevestiging als er al koppelingen zijn ("X regels hebben al een kostenplaats. Overschrijven?"); zonder koppelingen direct
+- `.gitignore`: back-upbestanden (back-up-zorg-controle-basis-*.json) worden nooit meer gecommit
 
 ## Huidige staat
 - **Branch:** `gebruiksvriendelijk` (vanaf `main`), nog niet gemerged
@@ -24,12 +26,11 @@
 - **Pull request:** nog niet gemaakt en niet gemerged; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...gebruiksvriendelijk
 - **Deploy status:** Lovable-preview, niet gecontroleerd
 - **Runtime-fouten:** niet gemeten
-- **Tests:** 30 testbestanden en 241 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
+- **Tests:** 31 testbestanden en 245 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
 
 ## Openstaande taken
 - [ ] Pull request maken en mergen (branch `gebruiksvriendelijk` naar `main`)
 - [ ] De vier onderdelen doorlopen in de Lovable-preview (zie "Volgende sessie")
-- [ ] Beslissen: de bestaande bulkactie "Alle regels naar kostenplaats" in de classificatie overschrijft nu alle koppelingen. Zo laten of voortaan alleen lege regels vullen?
 - [ ] `package-lock.json` committen (`npm install` is lokaal gedraaid)
 - [ ] `Journaalposten.pdf` opnieuw uploaden en de ruwe uitvoer van `pdfItemsNaarTabel()` (geanonimiseerd) bewaren als testvoorbeeld
 - [ ] Open vragen 1, 2, 9, 12 en 13 in `ROADMAP.md` beantwoorden
@@ -43,7 +44,7 @@
 - Opslag alleen in de browser (`localStorage`): een gewist profiel kost dossiers
 
 ## Volgende sessie: begin hier
-Draai `git pull` en `npx vitest run` (verwacht 30 testbestanden en 241 tests). Probeer daarna in de Lovable-preview: (1) op het dashboard "Voorbeelddossier laden", het dossier openen en de lijst "Wat ontbreekt nog?" nakijken (verwacht: alles compleet, volgende stap "Bekijk de controle"); (2) "Back-up maken", daarna "Back-up terugzetten" met dat bestand; (3) bij een eigen dossier de kolom "Kostenplaats of cliënt" koppelen en "Koppel automatisch op naam" proberen. Begin daarna met de proef met een echt declaratiebestand.
+Draai `git pull` en `npx vitest run` (verwacht 31 testbestanden en 245 tests). Probeer daarna in de Lovable-preview: (1) op het dashboard "Voorbeelddossier laden", het dossier openen en de lijst "Wat ontbreekt nog?" nakijken (verwacht: alles compleet, volgende stap "Bekijk de controle"); (2) "Back-up maken", daarna "Back-up terugzetten" met dat bestand; (3) bij een eigen dossier de kolom "Kostenplaats of cliënt" koppelen en "Koppel automatisch op naam" proberen. Begin daarna met de proef met een echt declaratiebestand.
 
 ## Bestanden gewijzigd
 - `src/components/AppShell.tsx` — "Diagnose" uit het zijmenu (route blijft)
@@ -54,6 +55,10 @@ Draai `git pull` en `npx vitest run` (verwacht 30 testbestanden en 241 tests). P
 - `src/components/dashboard/VoorbeeldEnBackup.tsx` — nieuw: voorbeelddossier en back-up op het dashboard
 - `src/components/projecten/ProjectenBeheer.tsx` — "Kostenplaatsen & tarieven"
 - `src/components/projecten/ToerekeningOverzicht.tsx` — wording kostenplaats
+- `.gitignore` — back-upbestanden uitgesloten van git
+- `src/components/bronnen/BulkBevestiging.tsx` — nieuw: bevestiging bij overschrijven van koppelingen
+- `src/lib/bulk-koppelen.ts` — nieuw: bulkkoppeling en bevestigingstekst (puur)
+- `src/lib/bulk-koppelen.test.ts` — nieuw: tests bulkkoppeling
 - `src/lib/backup.ts` — nieuw: back-up maken, controleren en terugzetten
 - `src/lib/backup.test.ts` — nieuw: tests back-up, incl. heen-en-terug
 - `src/lib/bronnen.ts` — veldnamen in validatiemeldingen; kolom Kostenplaats (optioneel); lezen en opruimen per dossier
