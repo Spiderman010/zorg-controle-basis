@@ -339,11 +339,22 @@ export function herkenLoonjournaal(
   tabel: string[][],
   posities?: number[][],
 ): { headers: string[]; rows: string[][] } | null {
+  const heeft = (c: string[], re: RegExp) => c.some((x) => re.test(x.trim()));
   const isKop = (c: string[]) =>
-    c.some((x) => /^(debet|credit)$/i.test(x.trim())) && c.some((x) => KOP_OVERIG.test(x.trim()));
+    (heeft(c, /^(debet|credit)$/i) && heeft(c, KOP_OVERIG)) ||
+    (heeft(c, /^debet$/i) && heeft(c, /^credit$/i));
   const kopIdx = tabel.findIndex(isKop);
   if (kopIdx < 0) return null;
-  const kop = tabel[kopIdx].map((x) => x.trim());
+  let kop = tabel[kopIdx].map((x) => x.trim());
+  // Kopregel met alleen Debet/Credit: tekstkolommen links ervan toevoegen.
+  if (!kop.some((k) => !KOP_BEDRAG.test(k))) {
+    kop = ["Rekening", "Omschrijving", ...kop];
+    if (posities?.[kopIdx]) {
+      const xs = posities[kopIdx];
+      posities = posities.slice();
+      posities[kopIdx] = [-2, -1, ...xs];
+    }
+  }
   const kopX = posities?.[kopIdx];
   const kopTekst = kop.join("|").toLowerCase();
 
