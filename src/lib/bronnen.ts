@@ -266,18 +266,32 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     let vorigeEind = -Infinity;
     for (const it of r) {
       const gat = it.x - vorigeEind;
-      if (cellen.length === 0 || gat > 12) cellen.push(it.str.trim());
-      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + it.str.trim();
+      const s = it.str.trim();
+      // Vetgedrukte tekst staat in sommige PDF's dubbel op dezelfde plek: overslaan.
+      if (cellen.length > 0 && cellen[cellen.length - 1].endsWith(s) && it.x - vorigeX < 2) continue;
+      if (cellen.length === 0 || gat > 12) cellen.push(s);
+      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + s;
       vorigeX = it.x;
       vorigeEind = vorigeX + it.str.length * 5;
     }
     return cellen;
   };
-  const tabel = regels.map(naarCellen);
+  const ontdubbel = (x: string) => {
+    const h = x.length / 2;
+    return x.length > 3 && x.length % 2 === 0 && x.slice(0, h) === x.slice(h) ? x.slice(0, h) : x;
+  };
+  const tabel = regels.map((r) => naarCellen(r).map(ontdubbel));
   const factuur = herkenFactuur(regels, tabel);
   if (factuur) return factuur;
-  const loon = herkenLoonspecificatie(tabel);
-  if (loon) return loon;
+  // Loonstroken: per pagina één medewerker (verzameldocument).
+  const paginas = [...new Set(regels.map((r) => r[0].pagina))];
+  const loonRijen: string[][] = [];
+  for (const p of paginas) {
+    const pt = regels.map((r, i) => (r[0].pagina === p ? tabel[i] : null)).filter((c): c is string[] => !!c);
+    const l = herkenLoonspecificatie(pt);
+    if (l) loonRijen.push(...l.rows);
+  }
+  if (loonRijen.length > 0) return { headers: [...LOON_KOLOMMEN], rows: loonRijen };
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
@@ -324,7 +338,7 @@ export function herkenLoonspecificatie(tabel: string[][]): { headers: string[]; 
   let medewerker = "";
   for (const c of tabel) {
     const i = c.findIndex((x) => /werknemer|^naam\b/i.test(x));
-    if (i >= 0 && c[i + 1]) {
+    if (i >= 0 && c[i + 1] && !/gegevens|nummer/i.test(c[i + 1])) {
       medewerker = c[i + 1].trim();
       break;
     }
@@ -334,7 +348,7 @@ export function herkenLoonspecificatie(tabel: string[][]): { headers: string[]; 
   let bruto: number | null = null;
   for (const c of tabel) {
     const t = c.join(" ");
-    if (!/bruto/i.test(t) || /netto/i.test(t)) continue;
+    if (!/bruto/i.test(t) || /netto|heffing|tabel|cumulat/i.test(t)) continue;
     const bedragen = c
       .slice(1)
       .map((x) => x.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+,\d{2}/)?.[0])
@@ -343,6 +357,15 @@ export function herkenLoonspecificatie(tabel: string[][]): { headers: string[]; 
     if (bedragen.length > 0) {
       bruto = Math.max(...bedragen);
       break;
+    }
+  }
+  if (bruto === null) {
+    // Terugval: regel "Salaris"/"Loon" met een bedrag.
+    for (const c of tabel) {
+      const t = c.join(" ");
+      if (!/^\s*(salaris|uurloon|maandloon|loon)\b/i.test(t) || /netto|heffing/i.test(t)) continue;
+      const b = c.slice(1).map((x) => nlBedragNaarGetal(x)).filter((x): x is string => !!x);
+      if (b.length) { bruto = Math.max(...b.map(Number)); break; }
     }
   }
   if (bruto === null) return null;
@@ -509,7 +532,7 @@ export function detectBronType(bestandsnaam: string, headers: string[]): BronTyp
   if (test("direct", "declarab", "cliëntgebonden", "clientgebonden")) return "directe_uren";
   if (test("betaalde uren", "verloond", "uren betaald", "loonuren")) return "betaalde_uren";
   if (test("inhuur", "zzp", "detacher", "uitzend")) return "inhuur";
-  if (test("personeel", "loon", "salaris", "lonen")) return "personeelskosten";
+  if (test("personeel", "loon", "salaris", "lonen", "journaal", "ljp")) return "personeelskosten";
   if (test("opbrengst", "omzet", "wlz", "zvw", "wmo", "pgb")) return "zorgopbrengsten";
   return null;
 }
@@ -517,9 +540,9 @@ export function detectBronType(bestandsnaam: string, headers: string[]): BronTyp
 // ---- Auto-suggestie kolommapping ----
 const VELD_SYNONIEMEN: Record<string, string[]> = {
   periode: ["periode", "maand", "jaar", "boekperiode", "datum"],
-  bedrag: ["bedrag", "amount", "saldo", "waarde", "totaal", "eur"],
+  bedrag: ["bedrag", "amount", "saldo", "debet", "waarde", "totaal", "eur"],
   rekening_of_categorie: ["rekening", "grootboek", "categorie", "account", "code"],
-  looncomponent: ["component", "looncomponent", "loonsoort", "soort"],
+  looncomponent: ["component", "looncomponent", "loonsoort", "soort", "omschrijving", "grootboek"],
   leverancier_of_omschrijving: ["leverancier", "vendor", "crediteur", "omschrijving", "naam"],
   medewerker: ["medewerker", "employee", "personeel", "naam", "id"],
   betaalde_uren: ["betaalde", "verloond", "loonuren", "uren"],
