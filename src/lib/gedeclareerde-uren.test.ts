@@ -77,7 +77,7 @@ describe("randgevallen", () => {
   it("geeft rood als het verplichte veld niet gekoppeld is", () => {
     const v = valideerBron(maakBron(["Periode", "Uren"], [["2026-09", "5"]], {}));
     expect(v.status).toBe("rood");
-    expect(v.fouten.join(" ")).toMatch(/gedeclareerde_uren/);
+    expect(v.fouten.join(" ")).toMatch(/Gedeclareerde uren \(aantal\)/);
   });
   it("leest decimalen uit Excel goed (7,5 en 2,25 uur)", async () => {
     const wb = XLSX.utils.book_new();

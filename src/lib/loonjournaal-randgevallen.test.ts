@@ -40,6 +40,6 @@ describe("loonjournaalpost: randgevallen", () => {
       type_auto_herkend: true, type_bevestigd: false, headers: t.headers, rijen: t.rows, preview_rows: 5,
       mapping: suggestMapping("personeelskosten", t.headers),
     };
-    expect(valideerBron(b).fouten.join(" ")).toMatch(/periode/);
+    expect(valideerBron(b).fouten.join(" ")).toMatch(/Periode/);
   });
 });

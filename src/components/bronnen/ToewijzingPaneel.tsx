@@ -7,6 +7,9 @@ import { BRON_LABELS, leesGedeclareerdeUren, upsertBron, type BronBestand } from
 import { listProjecten, projectLabel as label } from "@/lib/projecten";
 import { voorstelToewijzing } from "@/lib/uren-toewijzing";
 import { NieuweKostenplaatsDialog } from "./NieuweKostenplaatsDialog";
+import KoppelOpNaam from "./KoppelOpNaam";
+import { BulkBevestiging } from "./BulkBevestiging";
+import { bulkKoppelen } from "@/lib/bulk-koppelen";
 
 /** Sentinels: Radix Select staat geen lege waarde toe. */
 const ALGEMEEN = "__algemeen__";
@@ -52,11 +55,19 @@ export default function ToewijzingPaneel({ bron, onChange }: { bron: BronBestand
     opslaan(next);
   };
 
+  // Overschrijven vraagt eerst bevestiging als er al koppelingen zijn; zonder koppelingen gaat het direct.
+  const [bulkVraag, setBulkVraag] = useState<{ projectId: string; aantal: number } | null>(null);
+  const vraagBulk = (project_id: string) => {
+    const r = bulkKoppelen(bron.rijen.length, project_id === ALGEMEEN ? null : project_id, toewijzingen);
+    if (r.overschreven > 0) setBulkVraag({ projectId: project_id, aantal: r.overschreven });
+    else assignAll(project_id);
+  };
+
   const bulkProject = (project_id: string) => {
     // Guard tegen Radix-typeahead op een gesloten trigger (zelfde als in Classificatie).
     if (!bulkOpen) return;
     if (project_id === NIEUW) return setNieuw("alle");
-    assignAll(project_id);
+    vraagBulk(project_id);
   };
 
   const automatisch = () => {
@@ -82,6 +93,15 @@ export default function ToewijzingPaneel({ bron, onChange }: { bron: BronBestand
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <BulkBevestiging
+          open={bulkVraag !== null}
+          aantal={bulkVraag?.aantal ?? 0}
+          onBevestig={() => {
+            if (bulkVraag) assignAll(bulkVraag.projectId);
+            setBulkVraag(null);
+          }}
+          onAnnuleer={() => setBulkVraag(null)}
+        />
         {regels.length === 0 ? (
           <p className="text-sm text-destructive">
             Koppel eerst de verplichte kolommen in tab 2 voor {BRON_LABELS.gedeclareerde_uren}.
@@ -110,11 +130,12 @@ export default function ToewijzingPaneel({ bron, onChange }: { bron: BronBestand
                 dossierId={bron.dossier_id}
                 voorstelRol="opdrachtgever"
                 onAangemaakt={(p) => {
-                  if (nieuw === "alle") assignAll(p.id);
+                  if (nieuw === "alle") vraagBulk(p.id);
                   else if (nieuw !== null) setProject(nieuw, p.id);
                 }}
               />
             </div>
+            <KoppelOpNaam bron={bron} onChange={onChange} />
             {melding && <p className="text-sm text-muted-foreground" role="status">{melding}</p>}
             <div className="overflow-hidden rounded-md border">
               <table className="w-full text-sm">

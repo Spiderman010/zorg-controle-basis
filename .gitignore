@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Back-ups van de app (bevatten gegevens van medewerkers en cliënten): nooit committen
+back-up-zorg-controle-basis-*.json
+back-up*.json

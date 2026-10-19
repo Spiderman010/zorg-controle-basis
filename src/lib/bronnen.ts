@@ -1,6 +1,7 @@
 // Client-side opslag voor bronbestanden, mappings en classificaties (Fase 2B).
 // Later vervangen door Lovable Cloud.
 import { normalizeStroom } from "@/core";
+import { veldNaam } from "./veld-labels";
 
 export type BronType =
   | "zorgopbrengsten"
@@ -46,7 +47,8 @@ export const VERPLICHTE_VELDEN: Record<Exclude<BronType, "niet_gebruiken">, stri
 /** Optionele velden per brontype: mogen leeg blijven, mapping-UI toont ze als "(optioneel)". */
 export const OPTIONELE_VELDEN: Partial<Record<Exclude<BronType, "niet_gebruiken">, string[]>> = {
   zorgopbrengsten: ["financieringsstroom"],
-  gedeclareerde_uren: ["eenheid", "financieringsstroom"],
+  directe_uren: ["kostenplaats"],
+  gedeclareerde_uren: ["eenheid", "financieringsstroom", "kostenplaats"],
 };
 
 /** Alle brontypen die een gebruiker kan kiezen (zonder "niet gebruiken"). */
@@ -122,6 +124,17 @@ export function upsertBron(b: BronBestand) {
 export function deleteBron(id: string) {
   write(read().filter((b) => b.id !== id));
   verwijderPdf(id);
+}
+
+/** Alle bronnen van alle dossiers (voor de back-up). */
+export function listAllBronnen(): BronBestand[] {
+  return read();
+}
+
+/** Verwijdert alle bronnen van één dossier, inclusief de bewaarde PDF's. */
+export function deleteBronnenVanDossier(dossier_id: string) {
+  for (const b of read()) if (b.dossier_id === dossier_id) verwijderPdf(b.id);
+  write(read().filter((b) => b.dossier_id !== dossier_id));
 }
 
 // ---- Opgeslagen mappings (klantprofiel per bedrijfsnaam + type) ----
@@ -838,6 +851,7 @@ const VELD_SYNONIEMEN: Record<string, string[]> = {
   directe_uren: ["direct", "declarab", "cliëntgebonden", "clientgebonden", "uren"],
   gedeclareerde_uren: ["gedeclareerde uren", "gedeclareerde minuten", "gedeclareerd", "declaratie", "uren", "minuten", "aantal"],
   eenheid: ["eenheid", "unit"],
+  kostenplaats: ["kostenplaats", "cliënt", "project"],
   uren: ["uren", "hours"],
   financieringsstroom: ["financieringsstroom", "stroom", "kader", "wet", "financier", "geldstroom", "regeling"],
 };
@@ -893,7 +907,7 @@ export function valideerBron(b: BronBestand): ValidatieResultaat {
   const verplicht = VERPLICHTE_VELDEN[b.type];
   const m = b.mapping || {};
   for (const v of verplicht) {
-    if (!m[v]) fouten.push(`Verplicht veld "${v}" is niet gekoppeld aan een kolom.`);
+    if (!m[v]) fouten.push(`Verplicht veld "${veldNaam(v)}" is niet gekoppeld aan een kolom.`);
   }
   if (b.rijen.length === 0) waarschuwingen.push("Bestand bevat geen datarijen.");
 

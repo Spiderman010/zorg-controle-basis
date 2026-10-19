@@ -1,6 +1,6 @@
 # Roadmap — Zorg Controle Basis
 
-**Versie:** 0.9 — 19 oktober 2026
+**Versie:** 0.10 — 19 oktober 2026
 **Status:** concept, wordt herzien aan het einde van elke sessie (zie "Herzien")
 
 ## Doel
@@ -100,6 +100,13 @@ Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code ni
 - [x] Getalfout opgelost: bedragen en uren met een decimale punt (uit Excel en herkende PDF's) werden 10 tot 100 keer te groot gelezen in `datasetBuilder`; nu één gedeelde functie `parseGetal` met tests
 - [ ] `Journaalposten.pdf` opnieuw uploaden na de patch en de ruwe uitvoer van `pdfItemsNaarTabel()` bewaren als geanonimiseerd testvoorbeeld
 
+## Gebruiksvriendelijkheid
+
+- [x] Duidelijke Nederlandse namen en uitleg per veld (centrale lijst), "kostenplaats" overal in de UI, "Diagnose" uit het menu
+- [x] "Wat ontbreekt nog?" per dossier, met één volgende stap in vaste volgorde
+- [x] Sneller koppelen aan kostenplaatsen: kolom "Kostenplaats of cliënt", koppelen op naam, alle regels van een medewerker in één keer; bestaande koppelingen blijven staan
+- [x] Voorbeelddossier (Zorg Voorbeeld BV, vaste ids) laden en verwijderen; back-up maken en terugzetten
+
 ## Mijlpaal 1 — Import betrouwbaar
 
 - [ ] 1.1 Loonjournaal-import bevestigd met de echte PDF van een klant
@@ -164,7 +171,7 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 
 ## Mijlpaal 4 — Opslag veilig
 
-- [ ] 4.1 Back-up: dossiers exporteren en importeren (JSON), zodat een gewist browserprofiel geen dossiers kost
+- [x] 4.1 Back-up: dossiers exporteren en importeren (JSON), zodat een gewist browserprofiel geen dossiers kost (gebouwd: back-up maken en terugzetten met bevestiging, standaard zonder overschrijven)
 - [ ] 4.2 Besluit over duurzame opslag (Lovable Cloud of anders) — alleen na expliciete opdracht
 - [ ] 4.3 Privacy: loonjournalen bevatten gegevens van medewerkers; bewaartermijn en toegang vastleggen
 - [ ] 4.4 `verkoopklaar`-check, blokken B (betrouwbaarheid) en D (juridisch)
@@ -210,3 +217,4 @@ Aan het einde van elke sessie, samen met `HANDOFF.md`:
 | 2026-10-19 | 0.7 | Stap 2.0.4 afgerond: kerncontrole gedeclareerde tegen gewerkte uren per kostenplaats, apart getoond in het scherm Controle en niet in de hoofdscore. Dossierketen van bronnen naar controle getest met een fictief dossier. Stand: 22 testbestanden, 182 tests. Open vraag 13 toegevoegd |
 | 2026-10-19 | 0.8 | Besluit open vraag 13: de uren-controle telt mee in de hoofdscore als kerncontrole V1-C10 (tien kerncontroles). Dossiers zonder gedeclareerde uren behouden dezelfde score (de controle is dan grijs). Vier bestaande tests aangepast van 9 naar 10 kerncontroles. Stand: 22 testbestanden, 186 tests |
 | 2026-10-19 | 0.9 | Scherm Uren-controle: uitleg in gewone taal per kostenplaats, een "wat nu?"-zin, en cliënten onder een oranje of rode kostenplaats (2.0.5). Wijziging alleen in de weergave; `src/core` is niet aangeraakt |
+| 2026-10-19 | 0.10 | Gebruiksvriendelijkheid in vier onderdelen: namen en uitleg, wat ontbreekt nog, sneller koppelen aan kostenplaatsen, voorbeelddossier en back-up. 4.1 (back-up) afgevinkt. Wlz-verblijf vraagt geen kostenplaats meer |

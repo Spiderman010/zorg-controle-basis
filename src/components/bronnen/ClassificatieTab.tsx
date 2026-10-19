@@ -14,6 +14,9 @@ import {
 import { listProjecten, projectLabel as label } from "@/lib/projecten";
 import { NieuweKostenplaatsDialog } from "./NieuweKostenplaatsDialog";
 import ToewijzingPaneel from "./ToewijzingPaneel";
+import KoppelOpNaam, { KoppelMedewerker } from "./KoppelOpNaam";
+import { BulkBevestiging } from "./BulkBevestiging";
+import { bulkKoppelen } from "@/lib/bulk-koppelen";
 
 /** Sentinel voor "Algemeen" (geen toewijzing); Radix Select staat geen lege waarde toe. */
 const ALGEMEEN = "__algemeen__";
@@ -163,10 +166,18 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
     onChange();
   };
 
+  // Overschrijven vraagt eerst bevestiging als er al koppelingen zijn; zonder koppelingen gaat het direct.
+  const [bulkVraag, setBulkVraag] = useState<{ projectId: string; aantal: number } | null>(null);
+  const vraagBulk = (project_id: string) => {
+    const r = bulkKoppelen(bron.rijen.length, project_id === ALGEMEEN ? null : project_id, bron.projecttoewijzingen || {});
+    if (r.overschreven > 0) setBulkVraag({ projectId: project_id, aantal: r.overschreven });
+    else assignAll(project_id);
+  };
+
   const bulkProject = (project_id: string) => {
     if (!bulkOpen) return;
     if (project_id === NIEUW) return setNieuw("alle");
-    assignAll(project_id);
+    vraagBulk(project_id);
   };
 
   // Voorstel uit herkende factuur: kolom "Debiteur" (PDF-factuurlezer).
@@ -188,6 +199,21 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <BulkBevestiging
+          open={bulkVraag !== null}
+          aantal={bulkVraag?.aantal ?? 0}
+          onBevestig={() => {
+            if (bulkVraag) assignAll(bulkVraag.projectId);
+            setBulkVraag(null);
+          }}
+          onAnnuleer={() => setBulkVraag(null)}
+        />
+        {type === "directe_uren" && (
+          <div className="space-y-2">
+            <KoppelOpNaam bron={bron} onChange={onChange} />
+            <KoppelMedewerker bron={bron} onChange={onChange} />
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => bulk(knoppen[0].value)}>
             Alles {knoppen[0].label.toLowerCase()}
@@ -214,7 +240,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
             voorstelNaam={voorstelNaam(nieuw)}
             voorstelRol={type === "inhuur" ? "onderaannemer" : "opdrachtgever"}
             onAangemaakt={(p) => {
-              if (nieuw === "alle") assignAll(p.id);
+              if (nieuw === "alle") vraagBulk(p.id);
               else if (nieuw !== null) setProject(nieuw, p.id);
             }}
           />

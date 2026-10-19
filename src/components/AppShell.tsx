@@ -1,5 +1,5 @@
 import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { LayoutDashboard, FilePlus2, Wrench, ShieldCheck, ChevronRight } from "lucide-react";
+import { LayoutDashboard, FilePlus2, ShieldCheck, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { OpslagDiagnoseMelding } from "@/components/OpslagDiagnoseMelding";
@@ -7,7 +7,6 @@ import { OpslagDiagnoseMelding } from "@/components/OpslagDiagnoseMelding";
 const navItems = [
   { to: "/", label: "Dashboard", end: true, icon: LayoutDashboard },
   { to: "/dossiers/nieuw", label: "Nieuw dossier", icon: FilePlus2 },
-  { to: "/debug", label: "Diagnose", icon: Wrench },
 ];
 
 function kruimelpad(pathname: string): string[] {

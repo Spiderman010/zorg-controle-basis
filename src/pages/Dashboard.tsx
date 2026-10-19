@@ -9,16 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { listDossiers, type Dossier, type DossierStatus } from "@/lib/dossiers";
-import { ALLE_BRONTYPEN, listBronnen } from "@/lib/bronnen";
-import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
+import { listBronnen } from "@/lib/bronnen";
+import { voortgangDossier } from "@/lib/dossier-voortgang";
+import { VoorbeeldEnBackup } from "@/components/dashboard/VoorbeeldEnBackup";
 
+/** De volgende stap voor een dossier, in woorden (zelfde bron als de lijst op de dossierpagina). */
 function voortgang(dossierId: string) {
-  const typen = new Set(
-    listBronnen(dossierId)
-      .filter((b) => b.type_bevestigd && !b.fout && b.type && b.type !== "niet_gebruiken")
-      .map((b) => b.type),
-  );
-  return { aantal: typen.size, klaar: hasMinimaleBronnen(dossierId) };
+  const stap = voortgangDossier(listBronnen(dossierId), dossierId).volgendeStap;
+  return { stap: stap.tekst, klaar: stap.route.endsWith("/controle") };
 }
 
 type StatusFilter = "alle" | DossierStatus;
@@ -108,6 +106,8 @@ export default function Dashboard() {
           </Card>
         ))}
       </div>
+
+      <VoorbeeldEnBackup onChange={() => setDossiers(listDossiers())} />
 
       <Card>
         <div className="flex flex-col gap-3 border-b p-4 md:flex-row md:items-center">
@@ -203,7 +203,7 @@ export default function Dashboard() {
                         const v = voortgang(d.id);
                         return (
                           <div className={cn("mt-1 text-xs", v.klaar ? "text-success" : "text-muted-foreground")}>
-                            {v.aantal} / {ALLE_BRONTYPEN.length} bronnen{v.klaar ? " · klaar voor controle" : ""}
+                            {v.stap}
                           </div>
                         );
                       })()}
