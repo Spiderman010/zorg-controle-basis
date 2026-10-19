@@ -180,7 +180,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, projectAnalyse, soll, urenVerband, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId } = data;
   const sollPerProject = Object.fromEntries(soll.regels.map((r) => [r.project_id, r]));
   const toonSoll = soll.regels.some((r) => r.tarief !== undefined);
   const m = metrics;
@@ -310,8 +310,8 @@ export default function DossierControle() {
         </Card>
       </section>
 
-      {/* Uren-controle: gedeclareerd tegen gewerkt (apart, niet in de hoofdscore) */}
-      <UrenVerbandKaart resultaat={urenVerband} />
+      {/* Uren-controle: gedeclareerd tegen gewerkt (telt mee in de hoofdscore als V1-C10) */}
+      <UrenVerbandKaart resultaat={urenVerband} projecten={projecten} />
 
       {/* Projecten */}
       {projectAnalyse.length > 0 && (
