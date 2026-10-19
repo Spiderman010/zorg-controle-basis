@@ -326,6 +326,87 @@ export function nlBedragNaarGetal(s: string): string | null {
 export const FACTUUR_KOLOMMEN = ["Periode", "Factuurnummer", "Factuurdatum", "Debiteur", "Categorie", "Omschrijving", "Bedrag"];
 export const LOON_KOLOMMEN = ["Periode", "Medewerker", "Looncomponent", "Bedrag"];
 
+const KOP_BEDRAG = /^(debet|credit|bedrag)$/i;
+const KOP_OVERIG = /^(grootboek\w*|rekening\w*|omschrijving|gb|code)$/i;
+const TOTAAL_RE = /^\s*(totaal|subtotaal|saldo|verschil)\b/i;
+
+/**
+ * Herkent een loonjournaalpost (bijv. WinSalar / Loonbureau): zoekt de echte kopregel
+ * (Debet/Credit + Grootboek/Rekening/Omschrijving), negeert het briefhoofd, lijnt bedragen
+ * uit op x-positie en voegt een Periode-kolom toe uit het briefhoofd.
+ */
+export function herkenLoonjournaal(
+  tabel: string[][],
+  posities?: number[][],
+): { headers: string[]; rows: string[][] } | null {
+  const isKop = (c: string[]) =>
+    c.some((x) => /^(debet|credit)$/i.test(x.trim())) && c.some((x) => KOP_OVERIG.test(x.trim()));
+  const kopIdx = tabel.findIndex(isKop);
+  if (kopIdx < 0) return null;
+  const kop = tabel[kopIdx].map((x) => x.trim());
+  const kopX = posities?.[kopIdx];
+  const kopTekst = kop.join("|").toLowerCase();
+
+  // Periode uit briefhoofd: label Periode/Tijdvak, anders (afdruk)datum.
+  const hoofd = tabel.slice(0, kopIdx).map((c) => c.join(" ")).join("\n");
+  const jaar = hoofd.match(/\b(20\d{2})\b/)?.[1] ?? "";
+  let periode = "";
+  const label = hoofd.match(/(?:periode|tijdvak)\s*:?\s*([^\n]+)/i)?.[1] ?? "";
+  const zoekMaand = (t: string) => MAANDEN.findIndex((m) => new RegExp(`\\b${m}\\b`, "i").test(t));
+  const iso = (j: string, m: number) => `${j}-${String(m).padStart(2, "0")}`;
+  if (label) {
+    const mi = zoekMaand(label);
+    const nr = label.match(/\b(\d{1,2})\b/)?.[1];
+    const j = label.match(/\b(20\d{2})\b/)?.[1] ?? jaar;
+    if (mi >= 0 && j) periode = iso(j, mi + 1);
+    else if (nr && Number(nr) >= 1 && Number(nr) <= 12 && j) periode = iso(j, Number(nr));
+  }
+  if (!periode) {
+    const mi = zoekMaand(hoofd);
+    const d = hoofd.match(/(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})/);
+    if (mi >= 0 && jaar) periode = iso(jaar, mi + 1);
+    else if (d) periode = iso(d[3], Number(d[2]));
+    else periode = jaar;
+  }
+
+  const bedragKol = kop.map((k, i) => (KOP_BEDRAG.test(k) ? i : -1)).filter((i) => i >= 0);
+  const rows: string[][] = [];
+  for (let r = kopIdx + 1; r < tabel.length; r++) {
+    const c = tabel[r];
+    if (c.map((x) => x.trim()).join("|").toLowerCase() === kopTekst) continue;
+    if (TOTAAL_RE.test(c.join(" "))) continue;
+    if (!c.some((x) => nlBedragNaarGetal(x) !== null)) continue;
+    const uit = kop.map(() => "");
+    const xs = posities?.[r];
+    const tekst: string[] = [];
+    c.forEach((cel, i) => {
+      const b = nlBedragNaarGetal(cel);
+      const isBedrag = b !== null && /^[€\s\-\d.,]+$/.test(cel.trim());
+      if (isBedrag && bedragKol.length) {
+        let doel = bedragKol[0];
+        if (xs && kopX) {
+          let best = Infinity;
+          for (const k of bedragKol) {
+            const d = Math.abs((kopX[k] ?? 0) - xs[i]);
+            if (d < best) { best = d; doel = k; }
+          }
+        } else {
+          doel = bedragKol.find((k) => !uit[k]) ?? bedragKol[bedragKol.length - 1];
+        }
+        uit[doel] = b!;
+      } else tekst.push(cel.trim());
+    });
+    const tekstKol = kop.map((_, i) => i).filter((i) => !bedragKol.includes(i));
+    tekstKol.forEach((k, j) => (uit[k] = tekst[j] ?? ""));
+    if (tekst.length > tekstKol.length && tekstKol.length) {
+      uit[tekstKol[tekstKol.length - 1]] = tekst.slice(tekstKol.length - 1).join(" ");
+    }
+    rows.push([periode, ...uit]);
+  }
+  if (rows.length === 0) return null;
+  return { headers: ["Periode", ...kop], rows };
+}
+
 /**
  * Herkent een salarisspecificatie (loonstrook) en haalt het brutoloon per medewerker eruit.
  * Eén rij: periode (JJJJ-MM), medewerker, "Brutoloon", bedrag.
