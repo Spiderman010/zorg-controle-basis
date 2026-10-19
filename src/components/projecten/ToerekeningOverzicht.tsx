@@ -1,5 +1,6 @@
 import { Fragment, useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { Download, Search } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +14,31 @@ export default function ToerekeningOverzicht({ dossierId }: { dossierId: string 
   const [zoek, setZoek] = useState("");
   const alle = useMemo(() => berekenToerekening(listBronnen(dossierId), listProjecten(dossierId)), [dossierId]);
   const rijen = filterToerekening(alle, zoek);
+
+  const exporteer = async () => {
+    const XLSX = await import("xlsx");
+    const kop = ["Kostenplaats", "Soort", "Rol", "Omzet", "Kosten", "Marge", "Uren", "Regels"];
+    const data: (string | number)[][] = [kop];
+    const regel = (r: ToerekeningRij, soort: string, t = r) => {
+      data.push([
+        r.project?.naam ?? "Niet toegewezen",
+        soort,
+        r.project?.rol ? ROL_KORT[r.project.rol] : "",
+        t.omzet, t.kosten, t.omzet - t.kosten, t.uren, t.regels,
+      ]);
+    };
+    for (const r of rijen) {
+      regel(r, r.kinderen.length ? "Totaal opdrachtgever (incl. cliënten)" : "Kostenplaats", { ...r, ...totaalInclusief(r) });
+      for (const k of r.kinderen) regel(k, "Cliëntregel");
+    }
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws["!cols"] = [{ wch: 32 }, { wch: 36 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 8 }];
+    for (let i = 2; i <= data.length; i++)
+      for (const c of ["D", "E", "F"]) if (ws[`${c}${i}`]) ws[`${c}${i}`].z = '€ #,##0.00;-€ #,##0.00';
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Toerekening");
+    XLSX.writeFile(wb, `toerekening-kostenplaatsen-${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
 
   const Regel = ({ r, kind, inclusief }: { r: ToerekeningRij; kind?: boolean; inclusief?: boolean }) => {
     const t = inclusief ? totaalInclusief(r) : r;
@@ -40,9 +66,14 @@ export default function ToerekeningOverzicht({ dossierId }: { dossierId: string 
           <CardTitle className="text-base">Toerekening per kostenplaats</CardTitle>
           <p className="text-xs text-muted-foreground">Omzet en kosten per opdrachtgever, met cliënten eronder.</p>
         </div>
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+        <Button variant="outline" size="sm" onClick={exporteer} disabled={rijen.length === 0}>
+          <Download className="h-4 w-4" /> Excel downloaden
+        </Button>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input value={zoek} onChange={(e) => setZoek(e.target.value)} placeholder="Zoek kostenplaats..." className="pl-8" />
+        </div>
         </div>
       </CardHeader>
       <CardContent className="overflow-x-auto">
