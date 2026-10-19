@@ -27,6 +27,7 @@ import {
 import { listProjecten } from "@/lib/projecten";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 import { UrenVerbandKaart } from "@/components/controle/UrenVerbandKaart";
+import { resturenTonen } from "@/lib/controle-weergave";
 
 const CHECK_CODES: Record<CheckId, string> = {
   revenue_reconciliation: "V1-C01",
@@ -167,7 +168,8 @@ export default function DossierControle() {
     const soll = computeSollOmzet(dataset, sollConfig);
     const urenVerband = computeUrenVerband(dataset, { projecten });
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId };
+    const resturen = resturenTonen(dataset);
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId, resturen };
   }, [d]);
 
   if (!d) {
@@ -180,7 +182,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId, resturen } = data;
   const sollPerProject = Object.fromEntries(soll.regels.map((r) => [r.project_id, r]));
   const toonSoll = soll.regels.some((r) => r.tarief !== undefined);
   const m = metrics;
@@ -249,7 +251,11 @@ export default function DossierControle() {
             hint="Verlof, ziekte, scholing / betaalde uren."
             status={byId.non_productive_hours_ratio?.status}
           />
-          <KPICard label="Resturen" value={fmtNum(m.remaining_hours, 1)} hint="Niet-toegewezen uren." />
+          <KPICard
+            label="Resturen"
+            value={resturen === null ? "—" : fmtNum(resturen, 1)}
+            hint={resturen === null ? "Geen betaalde uren aangeleverd" : "Niet-toegewezen uren."}
+          />
           <KPICard
             label="Resturenratio"
             value={fmtPct(m.remaining_hours_ratio)}
@@ -260,8 +266,8 @@ export default function DossierControle() {
           />
           <KPICard
             label="Resturen euro-impact"
-            value={fmtEUR(m.remaining_hours_euro_impact)}
-            hint="Resturen × gemiddeld uurloon."
+            value={resturen === null ? "—" : fmtEUR(m.remaining_hours_euro_impact)}
+            hint={resturen === null ? "Geen betaalde uren aangeleverd" : "Resturen × gemiddeld uurloon."}
           />
         </div>
       </section>
