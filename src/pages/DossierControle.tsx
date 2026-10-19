@@ -27,6 +27,8 @@ import {
 import { listProjecten } from "@/lib/projecten";
 import { StatusBadge } from "@/components/controle/StatusBadge";
 import { UrenVerbandKaart } from "@/components/controle/UrenVerbandKaart";
+import { listBronnen } from "@/lib/bronnen";
+import { urenHerkomstRegel } from "@/lib/herkomst-weergave";
 
 const CHECK_CODES: Record<CheckId, string> = {
   revenue_reconciliation: "V1-C01",
@@ -166,8 +168,9 @@ export default function DossierControle() {
     const projectAnalyse = projecten.length > 0 ? computeProjectAnalyse(dataset, projecten) : [];
     const soll = computeSollOmzet(dataset, sollConfig);
     const urenVerband = computeUrenVerband(dataset, { projecten });
+    const urenHerkomst = urenHerkomstRegel(listBronnen(d.id));
     const byId = Object.fromEntries(checks.map((c) => [c.id, c])) as Record<CheckId, CheckResult>;
-    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId };
+    return { dataset, metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId, urenHerkomst };
   }, [d]);
 
   if (!d) {
@@ -180,7 +183,7 @@ export default function DossierControle() {
   }
 
   if (!data) return null;
-  const { metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId } = data;
+  const { metrics, checks, trends, summary, mix, mixSignaal, projecten, projectAnalyse, soll, urenVerband, byId, urenHerkomst } = data;
   const sollPerProject = Object.fromEntries(soll.regels.map((r) => [r.project_id, r]));
   const toonSoll = soll.regels.some((r) => r.tarief !== undefined);
   const m = metrics;
@@ -311,7 +314,7 @@ export default function DossierControle() {
       </section>
 
       {/* Uren-controle: gedeclareerd tegen gewerkt (telt mee in de hoofdscore als V1-C10) */}
-      <UrenVerbandKaart resultaat={urenVerband} projecten={projecten} />
+      <UrenVerbandKaart resultaat={urenVerband} projecten={projecten} herkomstRegel={urenHerkomst} />
 
       {/* Projecten */}
       {projectAnalyse.length > 0 && (

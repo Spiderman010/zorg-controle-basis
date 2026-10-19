@@ -25,7 +25,16 @@ export interface ProjectRef {
  * worden ze onder die kostenplaats getoond (uitsplitsing). Bij een groene kostenplaats staan ze
  * gewoon in de lijst, met de opdrachtgever erbij, zodat niets verdwijnt.
  */
-export function UrenVerbandKaart({ resultaat, projecten = [] }: { resultaat: UrenVerbandResultaat; projecten?: ProjectRef[] }) {
+export function UrenVerbandKaart({
+  resultaat,
+  projecten = [],
+  herkomstRegel,
+}: {
+  resultaat: UrenVerbandResultaat;
+  projecten?: ProjectRef[];
+  /** Bewijsniveau van de uren-bronnen; alleen weergave, verandert de uitkomst niet. */
+  herkomstRegel?: string;
+}) {
   const r = resultaat;
   const perId = new Map(projecten.map((p) => [p.id, p]));
   const statusVan = new Map(r.regels.map((x) => [x.project_id, x.status]));
@@ -102,6 +111,7 @@ export function UrenVerbandKaart({ resultaat, projecten = [] }: { resultaat: Ure
               </p>
             </>
           )}
+          {herkomstRegel && <p className="border-t p-4 text-xs text-muted-foreground">{herkomstRegel}</p>}
         </CardContent>
       </Card>
     </section>
