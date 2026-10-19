@@ -91,6 +91,7 @@ function BronKaart({
         <input
           ref={inputRef}
           type="file"
+          multiple
           accept=".csv,.xlsx,.xls,.pdf,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,application/pdf"
           className="hidden"
           onChange={(e) => {
@@ -99,7 +100,7 @@ function BronKaart({
           }}
         />
         <Button size="sm" variant="outline" className="w-full" onClick={() => inputRef.current?.click()}>
-          Bestand uploaden (CSV / Excel / PDF)
+          Bestanden uploaden (meerdere CSV / Excel / PDF)
         </Button>
         <ul className="space-y-2">
           {bestanden.map((b) => (

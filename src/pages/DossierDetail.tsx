@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { getDossier } from "@/lib/dossiers";
 import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
 import ProjectenBeheer from "@/components/projecten/ProjectenBeheer";
+import ToerekeningOverzicht from "@/components/projecten/ToerekeningOverzicht";
 
 export default function DossierDetail() {
   const { id = "" } = useParams();
@@ -90,6 +91,8 @@ export default function DossierDetail() {
           )}
         </CardContent>
       </Card>
+
+      <ToerekeningOverzicht dossierId={d.id} />
 
       <div>
         <Button asChild variant="outline"><Link to="/">Terug naar dashboard</Link></Button>
