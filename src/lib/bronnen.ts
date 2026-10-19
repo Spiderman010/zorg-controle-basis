@@ -533,7 +533,7 @@ export function suggestMapping(type: Exclude<BronType, "niet_gebruiken">, header
   // Herkende factuur/loonstrook: vaste koppeling, zodat "bedrag" nooit op een naamkolom valt.
   if (headers.join("|") === FACTUUR_KOLOMMEN.join("|")) {
     const relatieVeld = type === "zorgopbrengsten" ? "rekening_of_categorie" : "leverancier_of_omschrijving";
-    return { periode: "Periode", bedrag: "Bedrag", [relatieVeld]: type === "zorgopbrengsten" ? "Debiteur" : "Omschrijving" };
+    return { periode: "Periode", bedrag: "Bedrag", [relatieVeld]: "Omschrijving" };
   }
   if (headers.join("|") === LOON_KOLOMMEN.join("|")) {
     return { periode: "Periode", bedrag: "Bedrag", looncomponent: "Looncomponent", medewerker: "Medewerker" };

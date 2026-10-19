@@ -90,7 +90,18 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
   const waardeHeader = type === "directe_uren" ? m.directe_uren : m.bedrag;
 
   const omIdx = omschrijvingHeader ? bron.headers.indexOf(omschrijvingHeader) : -1;
-  const wIdx = waardeHeader ? bron.headers.indexOf(waardeHeader) : -1;
+  const isGetal = (v: string | undefined) => !!v && !isNaN(Number(String(v).replace(",", ".")));
+  let wIdx = waardeHeader ? bron.headers.indexOf(waardeHeader) : -1;
+  // Herstel: staat "bedrag" op een tekstkolom (bv. Debiteur), gebruik dan de kolom "Bedrag".
+  const fouteWaardeKolom = wIdx >= 0 && bron.rijen.length > 0 && !bron.rijen.some((r) => isGetal(r[wIdx]));
+  if (fouteWaardeKolom && bron.headers.includes("Bedrag")) wIdx = bron.headers.indexOf("Bedrag");
+  const toonWaarde = (v: string | undefined) => {
+    if (!isGetal(v)) return v ?? "";
+    const n = Number(String(v).replace(",", "."));
+    return type === "directe_uren"
+      ? n.toLocaleString("nl-NL")
+      : n.toLocaleString("nl-NL", { style: "currency", currency: "EUR" });
+  };
 
   const classificaties = bron.classificaties || {};
   const toewijzingen = bron.projecttoewijzingen || {};
@@ -232,7 +243,7 @@ function ClassificatiePaneel({ bron, onChange }: { bron: BronBestand; onChange: 
                 {zichtbaar.map(({ r, i }) => (
                   <tr key={i} className="border-t">
                     <td className="px-3 py-2">{r[omIdx] ?? ""}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{r[wIdx] ?? ""}</td>
+                    <td className="px-3 py-2 text-right tabular-nums">{toonWaarde(r[wIdx])}</td>
                     <td className="px-3 py-2">
                       {/* Fallback naar Algemeen bij een verwijderd project — spiegelt de rekenkern. */}
                       <Select
