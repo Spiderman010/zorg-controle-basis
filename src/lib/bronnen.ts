@@ -404,18 +404,25 @@ export function herkenLoonjournaal(
         } else {
           doel = bedragKol.find((k) => !uit[k]) ?? bedragKol[bedragKol.length - 1];
         }
-        uit[doel] = b!;
+        // "1.234,56-" (min erachter) is negatief; nlBedragNaarGetal laat dat teken vallen.
+        uit[doel] = /-\s*$/.test(cel.trim()) && !b!.startsWith("-") ? `-${b}` : b!;
       } else tekst.push(cel.trim());
     });
     const tekstKol = kop.map((_, i) => i).filter((i) => !bedragKol.includes(i));
-    tekstKol.forEach((k, j) => (uit[k] = tekst[j] ?? ""));
-    if (tekst.length > tekstKol.length && tekstKol.length) {
-      uit[tekstKol[tekstKol.length - 1]] = tekst.slice(tekstKol.length - 1).join(" ");
+    if (tekst.length > tekstKol.length) {
+      tekstKol.forEach((k, j) => (uit[k] = tekst[j] ?? ""));
+      if (tekstKol.length) uit[tekstKol[tekstKol.length - 1]] = tekst.slice(tekstKol.length - 1).join(" ");
+    } else {
+      // Minder tekstcellen dan tekstkolommen: alleen een rekeningnummer links, anders rechts
+      // uitlijnen zodat de omschrijving in de laatste tekstkolom (Omschrijving) komt.
+      const alleenCode = tekst.length === 1 && /^\d{3,}$/.test(tekst[0]);
+      const offset = alleenCode ? 0 : tekstKol.length - tekst.length;
+      tekst.forEach((t, j) => (uit[tekstKol[j + offset]] = t));
     }
-    rows.push([periode, ...uit]);
+    rows.push(periode ? [periode, ...uit] : uit);
   }
-  if (rows.length === 0) return null;
-  return { headers: ["Periode", ...kop], rows };
+  // Kop gevonden maar geen bruikbare regels: toch de echte kop teruggeven (geen terugval op het briefhoofd).
+  return { headers: periode ? ["Periode", ...kop] : kop, rows };
 }
 
 /**
