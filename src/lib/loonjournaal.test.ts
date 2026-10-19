@@ -35,3 +35,18 @@ describe("loonjournaalpost PDF", () => {
     });
   });
 });
+
+describe("loonjournaalpost met kop alleen Debet/Credit", () => {
+  const items = [
+    ...r(800, [["Datum: 21 april 2026, 11:22", 50], ["Loonbureau.nl", 350]]),
+    ...r(700, [["Debet", 350], ["Credit", 450]]),
+    ...r(680, [["4000", 50], ["Brutolonen", 120], ["12.500,00", 350]]),
+    ...r(650, [["1600", 50], ["Loonheffing", 120], ["3.000,00", 450]]),
+  ];
+  const t = pdfItemsNaarTabel(items);
+  it("gebruikt Debet/Credit als kop en voegt tekstkolommen toe", () => {
+    expect(t.headers).toEqual(["Periode", "Rekening", "Omschrijving", "Debet", "Credit"]);
+    expect(t.rows[0]).toEqual(["2026-04", "4000", "Brutolonen", "12500", ""]);
+    expect(t.rows[1][4]).toBe("3000");
+  });
+});
