@@ -87,7 +87,7 @@ export default function DossierBronnen() {
             </TabsList>
 
             <TabsContent value="upload" className="mt-6">
-              <UploadTab dossierId={id} bronnen={bronnen} onChange={refresh} />
+              <UploadTab dossierId={id} bronnen={bronnen} onChange={refresh} bedrijfsnaam={dossier.bedrijfsnaam} />
             </TabsContent>
             <TabsContent value="mapping" className="mt-6">
               <MappingTab bronnen={bronnen} onChange={refresh} bedrijfsnaam={dossier.bedrijfsnaam} />

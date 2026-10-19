@@ -50,6 +50,8 @@ export interface DossierVoortgang {
   volgendeStap: VolgendeStap;
   /** True als de volgende stap "bekijk de controle" is. */
   klaar: boolean;
+  /** Aantal bruikbare bronnen zonder vastgelegde herkomst. Alleen ter informatie, geen stap. */
+  herkomstOntbreekt: number;
 }
 
 const TOELICHTING: Record<BronVoortgangStatus, string> = {
@@ -89,7 +91,8 @@ export function voortgangDossier(bronnen: BronBestand[], dossierId: string): Dos
   });
 
   const volgendeStap = bepaalVolgendeStap(regels, dossierId);
-  return { bronnen: regels.map((r) => r.rij), volgendeStap, klaar: volgendeStap.route.endsWith("/controle") };
+  const herkomstOntbreekt = bruikbaar.filter((b) => !b.herkomst?.manier).length;
+  return { bronnen: regels.map((r) => r.rij), volgendeStap, klaar: volgendeStap.route.endsWith("/controle"), herkomstOntbreekt };
 }
 
 function bepaalVolgendeStap(

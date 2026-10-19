@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   bewijsniveau,
   datumUitLastModified,
+  datumNL,
   HERKOMST_MANIER_LABEL,
   BEWIJSNIVEAU_LABEL,
 } from "./herkomst";
@@ -77,5 +78,16 @@ describe("herkomst in de validatie en bij wisselen van type", () => {
   it("houdt de herkomst vast bij het wisselen van brontype", () => {
     const herkomst = { manier: "zelf_opgehaald" as const, systeem: "Voorbeeldsysteem", export_datum: "2026-10-01" };
     expect(wijzigBronType(bron({ herkomst }), "directe_uren").herkomst).toEqual(herkomst);
+  });
+});
+
+describe("datum in Nederlandse notatie", () => {
+  it("zet JJJJ-MM-DD en een ISO-tijdstip om naar DD-MM-JJJJ", () => {
+    expect(datumNL("2026-10-01")).toBe("01-10-2026");
+    expect(datumNL("2026-10-03T09:00:00.000Z")).toBe("03-10-2026");
+  });
+  it("geeft niets terug bij een lege of onleesbare datum", () => {
+    expect(datumNL(undefined)).toBeUndefined();
+    expect(datumNL("onbekend")).toBeUndefined();
   });
 });
