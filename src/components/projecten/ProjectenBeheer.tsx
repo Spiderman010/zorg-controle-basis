@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { STROOM_LABELS, STROOM_VOLGORDE, type Financieringsstroom } from "@/core";
-import { addProject, deleteProject, listProjecten, updateProject, projectLabel, type Project } from "@/lib/projecten";
+import { addProject, deleteProject, listProjecten, updateProject, projectLabel, type Project, type ProjectRol, ROL_LABELS } from "@/lib/projecten";
 import { BewerkProjectDialog } from "./BewerkProjectDialog";
 import { getDossier, updateDossier } from "@/lib/dossiers";
 
