@@ -262,6 +262,7 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
   const naarCellen = (regel: PdfTekstItem[]) => {
     const r = [...regel].sort((a, b) => a.x - b.x);
     const cellen: string[] = [];
+    const xs: number[] = [];
     let vorigeX = -Infinity;
     let vorigeEind = -Infinity;
     for (const it of r) {
@@ -269,18 +270,22 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
       const s = it.str.trim();
       // Vetgedrukte tekst staat in sommige PDF's dubbel op dezelfde plek: overslaan.
       if (cellen.length > 0 && cellen[cellen.length - 1].endsWith(s) && it.x - vorigeX < 2) continue;
-      if (cellen.length === 0 || gat > 12) cellen.push(s);
-      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + s;
+      if (cellen.length === 0 || gat > 12) {
+        cellen.push(s);
+        xs.push(it.x);
+      } else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + s;
       vorigeX = it.x;
       vorigeEind = vorigeX + it.str.length * 5;
     }
-    return cellen;
+    return { cellen, xs };
   };
   const ontdubbel = (x: string) => {
     const h = x.length / 2;
     return x.length > 3 && x.length % 2 === 0 && x.slice(0, h) === x.slice(h) ? x.slice(0, h) : x;
   };
-  const tabel = regels.map((r) => naarCellen(r).map(ontdubbel));
+  const metPos = regels.map((r) => naarCellen(r));
+  const tabel = metPos.map((m) => m.cellen.map(ontdubbel));
+  const posities = metPos.map((m) => m.xs);
   const factuur = herkenFactuur(regels, tabel);
   if (factuur) return factuur;
   // Loonstroken: per pagina één medewerker (verzameldocument).
@@ -292,6 +297,8 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     if (l) loonRijen.push(...l.rows);
   }
   if (loonRijen.length > 0) return { headers: [...LOON_KOLOMMEN], rows: loonRijen };
+  const journaal = herkenLoonjournaal(tabel, posities);
+  if (journaal) return journaal;
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
