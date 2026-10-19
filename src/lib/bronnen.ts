@@ -1,6 +1,7 @@
 // Client-side opslag voor bronbestanden, mappings en classificaties (Fase 2B).
 // Later vervangen door Lovable Cloud.
 import { normalizeStroom } from "@/core";
+import { veldNaam } from "./veld-labels";
 
 export type BronType =
   | "zorgopbrengsten"
@@ -893,7 +894,7 @@ export function valideerBron(b: BronBestand): ValidatieResultaat {
   const verplicht = VERPLICHTE_VELDEN[b.type];
   const m = b.mapping || {};
   for (const v of verplicht) {
-    if (!m[v]) fouten.push(`Verplicht veld "${v}" is niet gekoppeld aan een kolom.`);
+    if (!m[v]) fouten.push(`Verplicht veld "${veldNaam(v)}" is niet gekoppeld aan een kolom.`);
   }
   if (b.rijen.length === 0) waarschuwingen.push("Bestand bevat geen datarijen.");
 

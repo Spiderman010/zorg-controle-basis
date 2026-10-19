@@ -16,6 +16,7 @@ import {
   suggestMapping,
   upsertBron,
 } from "@/lib/bronnen";
+import { veldNaam, veldUitleg } from "@/lib/veld-labels";
 
 /** Sentinel voor "geen kolom gekozen" bij optionele velden (Radix Select staat geen lege waarde toe). */
 const GEEN_KOLOM = "__geen__";
@@ -116,12 +117,16 @@ function MappingKaart({
                 onChange();
               }}
             >
-              Opslaan als klantprofiel
+              Onthoud deze kolomkeuze voor deze klant
             </Button>
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
+        <p className="mb-4 text-xs text-muted-foreground">
+          Kies per veld de kolom uit het bestand. Met &quot;Onthoud deze kolomkeuze voor deze klant&quot; bewaar je de keuze;
+          bij een volgend bestand van dezelfde klant en hetzelfde type wordt die keuze dan voorgesteld.
+        </p>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           <div>
             <h4 className="mb-2 text-xs font-medium uppercase text-muted-foreground">Voorbeeld eerste rijen</h4>
@@ -151,7 +156,10 @@ function MappingKaart({
             <div className="space-y-3">
               {verplicht.map((v) => (
                 <div key={v} className="flex items-center gap-3">
-                  <span className="w-48 text-sm">{v}</span>
+                  <span className="w-48 text-sm">
+                    {veldNaam(v)}
+                    <span className="block text-xs text-muted-foreground">{veldUitleg(v)}</span>
+                  </span>
                   <Select value={mapping[v] || ""} onValueChange={(val) => update(v, val)}>
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Kies kolom…" />
@@ -171,7 +179,10 @@ function MappingKaart({
                 <div className="space-y-3">
                   {optioneel.map((v) => (
                     <div key={v} className="flex items-center gap-3">
-                      <span className="w-48 text-sm">{v} <span className="text-xs text-muted-foreground">(optioneel)</span></span>
+                      <span className="w-48 text-sm">
+                        {veldNaam(v)} <span className="text-xs text-muted-foreground">(optioneel)</span>
+                        <span className="block text-xs text-muted-foreground">{veldUitleg(v)}</span>
+                      </span>
                       <Select value={mapping[v] || GEEN_KOLOM} onValueChange={(val) => update(v, val)}>
                         <SelectTrigger className="h-9">
                           <SelectValue placeholder="Geen kolom" />

@@ -66,7 +66,7 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Projecten &amp; tarieven (optioneel)</CardTitle>
+        <CardTitle className="text-base">Kostenplaatsen &amp; tarieven (optioneel)</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-sm text-muted-foreground">
@@ -160,7 +160,7 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
         <div className="flex flex-wrap items-center gap-2">
           <Input
             className="h-9 w-56"
-            placeholder="Projectnaam, bv. WMO gemeente Utrecht"
+            placeholder="Naam kostenplaats, bv. WMO gemeente Utrecht"
             value={naam}
             onChange={(e) => setNaam(e.target.value)}
             onKeyDown={(e) => {

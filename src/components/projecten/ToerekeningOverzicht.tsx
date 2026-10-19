@@ -28,7 +28,7 @@ export default function ToerekeningOverzicht({ dossierId }: { dossierId: string 
       ]);
     };
     for (const r of rijen) {
-      regel(r, r.kinderen.length ? "Totaal opdrachtgever (incl. cliënten)" : "Kostenplaats", { ...r, ...totaalInclusief(r) });
+      regel(r, r.kinderen.length ? "Totaal kostenplaats (incl. cliënten)" : "Kostenplaats", { ...r, ...totaalInclusief(r) });
       for (const k of r.kinderen) regel(k, "Cliëntregel");
     }
     const ws = XLSX.utils.aoa_to_sheet(data);
@@ -64,7 +64,7 @@ export default function ToerekeningOverzicht({ dossierId }: { dossierId: string 
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 space-y-0">
         <div>
           <CardTitle className="text-base">Toerekening per kostenplaats</CardTitle>
-          <p className="text-xs text-muted-foreground">Omzet en kosten per opdrachtgever, met cliënten eronder.</p>
+          <p className="text-xs text-muted-foreground">Omzet en kosten per kostenplaats, met cliënten eronder.</p>
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
         <Button variant="outline" size="sm" onClick={exporteer} disabled={rijen.length === 0}>
@@ -101,7 +101,7 @@ export default function ToerekeningOverzicht({ dossierId }: { dossierId: string 
             </tbody>
           </table>
         )}
-        <p className="mt-3 text-xs text-muted-foreground">Totaal bij een opdrachtgever is inclusief de cliënten eronder.</p>
+        <p className="mt-3 text-xs text-muted-foreground">Totaal bij een kostenplaats is inclusief de cliënten eronder.</p>
       </CardContent>
     </Card>
   );

@@ -63,7 +63,7 @@ const CHECK_BRONNEN: Record<CheckId, string> = {
   direct_hours_ratio: "Betaalde uren, directe uren",
   non_productive_hours_ratio: "Betaalde uren, niet-productieve uren",
   remaining_hours_analysis: "Betaalde, directe en niet-productieve uren",
-  soll_omzet_check: "Zorgopbrengsten, directe uren, tarieven (projecten/standaard)",
+  soll_omzet_check: "Zorgopbrengsten, directe uren, tarieven (kostenplaatsen/standaard)",
   declared_hours_check: "Gedeclareerde uren, directe uren, kostenplaatsen",
 };
 
@@ -316,14 +316,14 @@ export default function DossierControle() {
       {/* Projecten */}
       {projectAnalyse.length > 0 && (
         <section className="space-y-3">
-          <h2 className="text-sm font-medium text-muted-foreground">Projecten</h2>
+          <h2 className="text-sm font-medium text-muted-foreground">Kostenplaatsen</h2>
           <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted text-xs">
                     <tr>
-                      <th className="px-4 py-2 text-left">Project</th>
+                      <th className="px-4 py-2 text-left">Kostenplaats</th>
                       <th className="px-4 py-2 text-right">Opbrengsten</th>
                       <th className="px-4 py-2 text-right">Aandeel</th>
                       <th className="px-4 py-2 text-right">Inhuur</th>
@@ -369,7 +369,7 @@ export default function DossierControle() {
             </CardContent>
           </Card>
           <p className="text-xs text-muted-foreground">
-            Opbrengst per uur = opbrengsten / directe uren van het project (gerealiseerd tarief). Projecten zijn
+            Opbrengst per uur = opbrengsten / directe uren van de kostenplaats (gerealiseerd tarief). Kostenplaatsen zijn
             informatief en tellen niet mee in de hoofdscore; niet-toegewezen regels vallen onder "Algemeen".
           </p>
         </section>
