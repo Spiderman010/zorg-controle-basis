@@ -1,11 +1,12 @@
 // Verbandcontrole gedeclareerde uren tegen gewerkte directe uren, per project (kostenplaats).
-// Aparte module naast de kerncontroles: telt NIET mee in de hoofdscore (zoals de projectanalyse
-// en de financieringsmix). Statussen: groen, oranje, rood of grijs (niet vergelijkbaar).
+// Kerncontrole V1-C10: telt mee in de hoofdscore via `urenVerbandCheck`. De eindstatus is de slechtste
+// status over de vergelijkbare kostenplaatsen (conservatief). Zonder gedeclareerde of directe uren is de
+// controle grijs en telt dan niet mee. Statussen: groen, oranje, rood of grijs (niet vergelijkbaar).
 //
 // De richting is niet symmetrisch. Meer gedeclareerd dan gewerkt is het grootste risico
 // (terugvordering) en wordt strenger beoordeeld dan minder gedeclareerd (gemiste omzet).
 // De drempels zijn een voorstel en per financieringsstroom in te stellen.
-import type { CheckStatus, Dataset } from "./types";
+import type { CheckResult, CheckStatus, Dataset } from "./types";
 import { ALGEMEEN_PROJECT_ID, ALGEMEEN_PROJECT_NAAM, type ProjectDef } from "./projecten";
 import type { Financieringsstroom } from "./financiering";
 
@@ -192,5 +193,38 @@ export function computeUrenVerband(ds: Dataset, config: UrenVerbandConfig = {}):
     uitvoerbaar: vergelijkbaar.length > 0,
     reden_niet_uitvoerbaar: vergelijkbaar.length > 0 ? undefined : "geen vergelijkbare regels",
     aantal,
+  };
+}
+
+/** Kerncontrole V1-C10 voor de hoofdscore. Grijs als er niets te vergelijken valt. */
+export function urenVerbandCheck(ds: Dataset, config: UrenVerbandConfig = {}): CheckResult {
+  const r = computeUrenVerband(ds, config);
+  const label = "Gedeclareerde tegen gewerkte uren";
+  if (!r.uitvoerbaar) {
+    return { id: "declared_hours_check", label, status: "grijs", message: `Niet uitvoerbaar – ${r.reden_niet_uitvoerbaar}` };
+  }
+  const afw = r.totaal_worked > 0 ? (r.totaal_declared - r.totaal_worked) / r.totaal_worked : undefined;
+  const pct = afw === undefined ? "" : ` (${afw > 0 ? "+" : ""}${(afw * 100).toFixed(1)}%)`;
+  const uren = `gedeclareerd ${r.totaal_declared.toFixed(0)} uur tegen ${r.totaal_worked.toFixed(0)} uur gewerkt${pct}`;
+  const vergelijkbaar = r.aantal.groen + r.aantal.oranje + r.aantal.rood;
+  const message =
+    r.niveau === "totaal"
+      ? `Alleen het totaal vergeleken (uren niet per kostenplaats gekoppeld): ${uren}`
+      : `${vergelijkbaar} kostenplaats(en) vergeleken: ${r.aantal.rood} rood, ${r.aantal.oranje} oranje, ${r.aantal.groen} groen` +
+        `${r.aantal.grijs > 0 ? `, ${r.aantal.grijs} niet vergelijkbaar` : ""}. Totaal ${uren}`;
+  return {
+    id: "declared_hours_check",
+    label,
+    status: r.status,
+    value: afw,
+    message,
+    details: {
+      declared: r.totaal_declared,
+      worked: r.totaal_worked,
+      rood: r.aantal.rood,
+      oranje: r.aantal.oranje,
+      groen: r.aantal.groen,
+      grijs: r.aantal.grijs,
+    },
   };
 }

@@ -23,7 +23,7 @@ describe("UrenVerbandKaart", () => {
   });
   const toon = (ds: Dataset) => act(() => root.render(<UrenVerbandKaart resultaat={computeUrenVerband(ds, { projecten })} />));
 
-  it("toont per kostenplaats uren, afwijking en status, en dat het niet in de score meetelt", () => {
+  it("toont per kostenplaats uren, afwijking en status, en dat het in de hoofdscore meetelt", () => {
     toon({
       direct_hours: [{ ...basis, employee_id: "m", direct_hours: 300, project_id: "B" }, { ...basis, employee_id: "m", direct_hours: 421, project_id: "A" }],
       declared_hours: [{ ...basis, declared_hours: 330, in_hours: "ja", project_id: "B" }, { ...basis, declared_hours: 420, in_hours: "ja", project_id: "A" }],
@@ -32,7 +32,7 @@ describe("UrenVerbandKaart", () => {
     expect(t).toContain("Zvw-team");
     expect(t).toContain("+10%");
     expect(t).toContain("te veel gedeclareerd");
-    expect(t).toContain("telt niet mee in de hoofdscore");
+    expect(t).toContain("Telt mee in de hoofdscore");
     expect(container.querySelector('[data-status="Rood"]')).toBeTruthy();
   });
 

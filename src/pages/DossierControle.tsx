@@ -38,6 +38,7 @@ const CHECK_CODES: Record<CheckId, string> = {
   non_productive_hours_ratio: "V1-C07",
   remaining_hours_analysis: "V1-C08",
   soll_omzet_check: "V1-C09",
+  declared_hours_check: "V1-C10",
 };
 
 const CHECK_FORMULES: Record<CheckId, string> = {
@@ -50,6 +51,7 @@ const CHECK_FORMULES: Record<CheckId, string> = {
   non_productive_hours_ratio: "niet-productieve uren / betaalde uren",
   remaining_hours_analysis: "(betaalde − direct − niet-productief) / betaalde",
   soll_omzet_check: "(omzet − directe uren × tarief) / (directe uren × tarief)",
+  declared_hours_check: "(gedeclareerde − gewerkte directe uren) / gewerkte directe uren, per kostenplaats",
 };
 
 const CHECK_BRONNEN: Record<CheckId, string> = {
@@ -62,6 +64,7 @@ const CHECK_BRONNEN: Record<CheckId, string> = {
   non_productive_hours_ratio: "Betaalde uren, niet-productieve uren",
   remaining_hours_analysis: "Betaalde, directe en niet-productieve uren",
   soll_omzet_check: "Zorgopbrengsten, directe uren, tarieven (projecten/standaard)",
+  declared_hours_check: "Gedeclareerde uren, directe uren, kostenplaatsen",
 };
 
 const CHECK_VERVOLG: Record<CheckId, string> = {
@@ -74,6 +77,7 @@ const CHECK_VERVOLG: Record<CheckId, string> = {
   non_productive_hours_ratio: "Bekijk verzuim, verlof en scholing.",
   remaining_hours_analysis: "Onderzoek niet-toegewezen uren en hun kosten.",
   soll_omzet_check: "Onderzoek tariefverschillen, niet-gedeclareerde uren of omzet zonder uren.",
+  declared_hours_check: "Onderzoek per kostenplaats: te veel gedeclareerd (risico op terugvordering) of uren zonder declaratie (gemiste omzet).",
 };
 
 function fmtEUR(n: number | undefined) {
@@ -154,7 +158,7 @@ export default function DossierControle() {
     const metrics = computeMetrics(dataset);
     const projecten = listProjecten(d.id);
     const sollConfig = { projecten, standaard_tarief: d.standaard_tarief };
-    const checks = runChecks(dataset, { soll: sollConfig });
+    const checks = runChecks(dataset, { soll: sollConfig, urenverband: { projecten } });
     const trends = runTrendChecksFromDataset(dataset);
     const summary = summarize(checks);
     const mix = computeFinancieringsMix(dataset);

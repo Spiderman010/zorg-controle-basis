@@ -28,6 +28,7 @@ const CHECK_CODES: Record<CheckId, string> = {
   non_productive_hours_ratio: "V1-C07",
   remaining_hours_analysis: "V1-C08",
   soll_omzet_check: "V1-C09",
+  declared_hours_check: "V1-C10",
 };
 
 function fmtEUR(n: number | undefined) {
@@ -137,7 +138,10 @@ export default function DossierRapportage() {
     return {
       dataset,
       metrics: computeMetrics(dataset),
-      checks: runChecks(dataset, { soll: { projecten: listProjecten(d.id), standaard_tarief: d.standaard_tarief } }),
+      checks: runChecks(dataset, {
+        soll: { projecten: listProjecten(d.id), standaard_tarief: d.standaard_tarief },
+        urenverband: { projecten: listProjecten(d.id) },
+      }),
       trends: runTrendChecksFromDataset(dataset),
     };
   }, [d]);

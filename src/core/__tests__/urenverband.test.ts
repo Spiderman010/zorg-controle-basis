@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeUrenVerband, runChecks, summarize, ALGEMEEN_PROJECT_ID, type Dataset, type DeclaredHoursRecord, type DirectHoursRecord } from "../index";
+import { computeUrenVerband, runChecks, summarize, CORE_CHECK_IDS, ALGEMEEN_PROJECT_ID, type Dataset, type DeclaredHoursRecord, type DirectHoursRecord } from "../index";
 
 const basis = { dossier_id: "d", period: "2026-09", source_file: "test", import_status: "valid" as const };
 const gewerkt = (project_id: string | undefined, direct_hours: number): DirectHoursRecord => ({ ...basis, employee_id: "m1", direct_hours, project_id });
@@ -115,12 +115,56 @@ describe("urenverband: randgevallen", () => {
   });
 });
 
-describe("urenverband telt niet mee in de hoofdscore", () => {
-  it("de negen kerncontroles en de score blijven gelijk met of zonder gedeclareerde uren", () => {
-    const zonder = runChecks({ direct_hours: fictief.direct_hours });
-    const met = runChecks(fictief);
-    expect(met.map((c) => c.id)).toEqual(zonder.map((c) => c.id));
-    expect(met).toHaveLength(9);
-    expect(summarize(met)).toEqual(summarize(zonder));
+describe("urenverband telt mee in de hoofdscore als kerncontrole", () => {
+  const ID = "declared_hours_check";
+  it("staat in CORE_CHECK_IDS en runChecks geeft tien controles", () => {
+    expect(CORE_CHECK_IDS).toContain(ID);
+    expect(CORE_CHECK_IDS).toHaveLength(10);
+    expect(runChecks(fictief, { urenverband: { projecten } })).toHaveLength(10);
+  });
+
+  it("zonder gedeclareerde uren is de controle grijs en blijft de score gelijk", () => {
+    const alle = runChecks({ direct_hours: fictief.direct_hours });
+    const nieuw = alle.find((c) => c.id === ID)!;
+    expect(nieuw.status).toBe("grijs");
+    expect(nieuw.message).toMatch(/Niet uitvoerbaar/);
+    const met = summarize(alle);
+    const zonder = summarize(alle.filter((c) => c.id !== ID));
+    // Alleen het aantal grijze controles (en het totaal) stijgt met één; de score zelf verandert niet.
+    expect({ ...met, total: 0, grijs: 0 }).toEqual({ ...zonder, total: 0, grijs: 0 });
+    expect(met.total).toBe(zonder.total + 1);
+    expect(met.grijs).toBe(zonder.grijs + 1);
+  });
+
+  it("met gedeclareerde uren telt de controle mee: rood geeft gewicht 0, oranje 0,5", () => {
+    const paid = [{ ...basis, employee_id: "m1", paid_hours: 2500 }];
+    const rood = runChecks({ ...fictief, paid_hours: paid }, { urenverband: { projecten } });
+    expect(rood.find((c) => c.id === ID)!.status).toBe("rood");
+    const zonderRood = summarize(rood.filter((c) => c.id !== ID));
+    const metRood = summarize(rood);
+    expect(metRood.uitvoerbaar).toBe(zonderRood.uitvoerbaar + 1);
+    expect(metRood.score! * metRood.uitvoerbaar).toBeCloseTo(zonderRood.score! * zonderRood.uitvoerbaar, 9);
+
+    const oranjeDs: Dataset = { direct_hours: [gewerkt("C", 330)], declared_hours: [gedecl("C", 300)], paid_hours: paid };
+    const oranje = runChecks(oranjeDs, { urenverband: { projecten } });
+    expect(oranje.find((c) => c.id === ID)!.status).toBe("oranje");
+    const z = summarize(oranje.filter((c) => c.id !== ID));
+    const m = summarize(oranje);
+    expect(m.score! * m.uitvoerbaar).toBeCloseTo(z.score! * z.uitvoerbaar + 0.5, 9);
+  });
+
+  it("geeft een duidelijke boodschap met aantallen en de totale afwijking", () => {
+    const c = runChecks(fictief, { urenverband: { projecten } }).find((x) => x.id === ID)!;
+    expect(c.status).toBe("rood");
+    expect(c.message).toMatch(/7 kostenplaats\(en\) vergeleken: 2 rood, 2 oranje, 3 groen, 1 niet vergelijkbaar/);
+    expect(c.value).toBeCloseTo((1380 - 1381) / 1381, 6);
+    expect(c.details).toMatchObject({ declared: 1380, worked: 1381, rood: 2, oranje: 2, groen: 3, grijs: 1 });
+  });
+
+  it("zegt dat alleen het totaal is vergeleken als de uren niet aan kostenplaatsen hangen", () => {
+    const ds: Dataset = { direct_hours: [gewerkt(undefined, 100)], declared_hours: [gedecl(undefined, 100)] };
+    const c = runChecks(ds).find((x) => x.id === ID)!;
+    expect(c.status).toBe("groen");
+    expect(c.message).toMatch(/Alleen het totaal vergeleken/);
   });
 });

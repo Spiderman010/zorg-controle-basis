@@ -113,7 +113,8 @@ export type CheckId =
   | "direct_hours_ratio"
   | "non_productive_hours_ratio"
   | "remaining_hours_analysis"
-  | "soll_omzet_check";
+  | "soll_omzet_check"
+  | "declared_hours_check";
 
 export interface CheckResult {
   id: CheckId;

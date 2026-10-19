@@ -7,8 +7,8 @@ const pct = (n: number | undefined) =>
   n === undefined ? "-" : `${n > 0 ? "+" : ""}${(n * 100).toLocaleString("nl-NL", { maximumFractionDigits: 1 })}%`;
 
 /**
- * Verbandcontrole gedeclareerde tegen gewerkte uren. Voorlopig apart getoond:
- * telt niet mee in de hoofdscore (zoals de financieringsmix en de projectanalyse).
+ * Verbandcontrole gedeclareerde tegen gewerkte uren, per kostenplaats. Dezelfde berekening
+ * telt als kerncontrole V1-C10 mee in de hoofdscore; deze kaart toont het detail.
  */
 export function UrenVerbandKaart({ resultaat }: { resultaat: UrenVerbandResultaat }) {
   const r = resultaat;
@@ -16,7 +16,7 @@ export function UrenVerbandKaart({ resultaat }: { resultaat: UrenVerbandResultaa
     <section className="space-y-3">
       <div className="flex items-end justify-between">
         <h2 className="text-sm font-medium text-muted-foreground">Uren-controle: gedeclareerd tegen gewerkt</h2>
-        <p className="text-xs text-muted-foreground">Voorlopig apart getoond — telt niet mee in de hoofdscore</p>
+        <p className="text-xs text-muted-foreground">Telt mee in de hoofdscore (V1-C10)</p>
       </div>
       <Card>
         <CardContent className="p-0">
