@@ -46,7 +46,7 @@ describe("loonjournaalpost met kop alleen Debet/Credit", () => {
   const t = pdfItemsNaarTabel(items);
   it("gebruikt Debet/Credit als kop en voegt tekstkolommen toe", () => {
     expect(t.headers).toEqual(["Periode", "Rekening", "Omschrijving", "Debet", "Credit"]);
-    expect(t.rows[0]).toEqual(["2026-04", "4000", "Brutolonen", "12500", ""]);
-    expect(t.rows[1][4]).toBe("3000");
+    expect(t.rows[0]).toEqual(["2026-04", "4000", "Brutolonen", "12500.00", ""]);
+    expect(t.rows[1][4]).toBe("3000.00");
   });
 });
