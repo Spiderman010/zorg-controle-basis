@@ -4,6 +4,7 @@
 import { listDossiers, upsertDossier, type Dossier } from "./dossiers";
 import { listAllProjecten, upsertProject, deleteProjectsVanDossier, type Project } from "./projecten";
 import { listAllBronnen, upsertBron, deleteBronnenVanDossier, type BronBestand } from "./bronnen";
+import { listKlantprofielen, schrijfKlantprofielen, type KlantprofielStore } from "./klantprofiel";
 
 export const BACKUP_APP = "zorg-controle-basis";
 export const BACKUP_VERSIE = 1;
@@ -15,10 +16,12 @@ export interface Backup {
   dossiers: Dossier[];
   projecten: Project[];
   bronnen: BronBestand[];
+  /** Optioneel (sinds de aanleverprofielen); oudere back-ups hebben dit veld niet. */
+  klantprofielen?: KlantprofielStore;
 }
 
 export type LeesResultaat =
-  | { ok: true; backup: Backup; aantal: { dossiers: number; projecten: number; bronnen: number } }
+  | { ok: true; backup: Backup; aantal: { dossiers: number; projecten: number; bronnen: number }; profielen: number }
   | { ok: false; fout: string };
 
 export function maakBackup(nu: Date = new Date()): Backup {
@@ -29,6 +32,7 @@ export function maakBackup(nu: Date = new Date()): Backup {
     dossiers: listDossiers(),
     projecten: listAllProjecten(),
     bronnen: listAllBronnen(),
+    klantprofielen: listKlantprofielen(),
   };
 }
 
@@ -64,12 +68,20 @@ export function leesBackup(tekst: string): LeesResultaat {
   const dossierIds = new Set((dossiers as { id: string }[]).map((d) => d.id));
   const wees = [...(projecten as { dossier_id: string }[]), ...(bronnen as { dossier_id: string }[])].some((x) => !dossierIds.has(x.dossier_id));
   if (wees) return fout("Een kostenplaats of bron hoort bij een dossier dat niet in het bestand staat.");
+  const kp = data.klantprofielen;
+  if (kp !== undefined) {
+    if (!isObj(kp)) return fout('Onderdeel "klantprofielen" is ongeldig.');
+    if (!Object.values(kp).every((p) => isObj(p) && Array.isArray(p.systemen))) {
+      return fout("Een klantprofiel in de back-up is onvolledig.");
+    }
+  }
 
   const backup = data as unknown as Backup;
   return {
     ok: true,
     backup,
     aantal: { dossiers: dossiers.length, projecten: projecten.length, bronnen: bronnen.length },
+    profielen: isObj(kp) ? Object.keys(kp).length : 0,
   };
 }
 
@@ -120,5 +132,13 @@ export function terugzetten(backup: Backup, overschrijven: boolean): { toegevoeg
   }
   backup.projecten.filter((p) => geschreven.has(p.dossier_id)).forEach(upsertProject);
   [...backup.bronnen].filter((b) => geschreven.has(b.dossier_id)).reverse().forEach(upsertBron);
+  // Aanleverprofielen: nieuwe toevoegen; bestaande alleen vervangen bij overschrijven.
+  if (backup.klantprofielen) {
+    const profielen = listKlantprofielen();
+    for (const [k, p] of Object.entries(backup.klantprofielen)) {
+      if (!(k in profielen) || overschrijven) profielen[k] = p;
+    }
+    schrijfKlantprofielen(profielen);
+  }
   return { toegevoegd: plan.toegevoegd, vervangen: plan.vervangen, overgeslagen: plan.overgeslagen.length };
 }
