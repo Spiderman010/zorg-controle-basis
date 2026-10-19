@@ -1,9 +1,12 @@
 import { Link, useParams } from "react-router-dom";
+import { CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { getDossier } from "@/lib/dossiers";
 import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
+import { listBronnen } from "@/lib/bronnen";
+import { voortgangDossier } from "@/lib/dossier-voortgang";
 import ProjectenBeheer from "@/components/projecten/ProjectenBeheer";
 import ToerekeningOverzicht from "@/components/projecten/ToerekeningOverzicht";
 
@@ -21,6 +24,7 @@ export default function DossierDetail() {
   }
 
   const klaarVoorControle = hasMinimaleBronnen(d.id);
+  const voortgang = voortgangDossier(listBronnen(d.id), d.id);
 
   const rows: Array<[string, string]> = [
     ["Bedrijfsnaam", d.bedrijfsnaam],
@@ -50,6 +54,36 @@ export default function DossierDetail() {
               </div>
             ))}
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Wat ontbreekt nog?</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <ul className="space-y-3">
+            {voortgang.bronnen.map((b) => (
+              <li key={b.type} className="flex items-start gap-3 text-sm">
+                {b.status === "compleet" ? (
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-success" aria-label="Compleet" />
+                ) : (
+                  <Circle className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-label="Nog niet compleet" />
+                )}
+                <div>
+                  <p className="font-medium">{b.label}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {b.levert}. {b.toelichting}
+                    {b.bestandsnamen.length > 0 && <> Bestand: {b.bestandsnamen.join(", ")}.</>}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4">
+            <p className="text-sm">{voortgang.volgendeStap.tekst}</p>
+            <Button asChild>
+              <Link to={voortgang.volgendeStap.route}>Volgende stap</Link>
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

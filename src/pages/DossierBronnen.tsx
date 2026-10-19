@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,7 +16,11 @@ export default function DossierBronnen() {
   const { id = "" } = useParams();
   const dossier = getDossier(id);
   const [bronnen, setBronnen] = useState<BronBestand[]>([]);
-  const [tab, setTab] = useState("upload");
+  // Een tabblad kan via de adresbalk worden geopend, bijvoorbeeld ?tab=mapping (vanuit "Wat ontbreekt nog?").
+  const [searchParams] = useSearchParams();
+  const geldigeTabs = ["upload", "mapping", "classificatie", "validatie"];
+  const gevraagdTab = searchParams.get("tab");
+  const [tab, setTab] = useState(gevraagdTab && geldigeTabs.includes(gevraagdTab) ? gevraagdTab : "upload");
 
   const refresh = () => setBronnen(listBronnen(id));
   useEffect(() => {
