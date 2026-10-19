@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   BRON_LABELS,
+  EENHEID_LABEL,
+  type Eenheid,
   VERPLICHTE_VELDEN,
   OPTIONELE_VELDEN,
   type BronBestand,
@@ -17,6 +19,8 @@ import {
 
 /** Sentinel voor "geen kolom gekozen" bij optionele velden (Radix Select staat geen lege waarde toe). */
 const GEEN_KOLOM = "__geen__";
+/** Sentinel voor "eenheid automatisch herkennen". */
+const AUTO_EENHEID = "__auto__";
 
 interface Props {
   bronnen: BronBestand[];
@@ -181,6 +185,31 @@ function MappingKaart({
                       </Select>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+            {type === "gedeclareerde_uren" && (
+              <>
+                <h4 className="mb-2 mt-4 text-xs font-medium uppercase text-muted-foreground">Eenheid</h4>
+                <div className="flex items-center gap-3">
+                  <span className="w-48 text-sm">Eenheid van de aantallen</span>
+                  <Select
+                    value={bron.eenheid ?? AUTO_EENHEID}
+                    onValueChange={(val) => {
+                      upsertBron({ ...bron, eenheid: val === AUTO_EENHEID ? undefined : (val as Eenheid) });
+                      onChange();
+                    }}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={AUTO_EENHEID}>Automatisch (uit kolom of kolomnaam)</SelectItem>
+                      {(Object.keys(EENHEID_LABEL) as Eenheid[]).map((e) => (
+                        <SelectItem key={e} value={e}>{EENHEID_LABEL[e]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </>
             )}

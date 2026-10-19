@@ -13,6 +13,7 @@ import {
 } from "@/lib/bronnen";
 import { listProjecten, projectLabel as label } from "@/lib/projecten";
 import { NieuweKostenplaatsDialog } from "./NieuweKostenplaatsDialog";
+import ToewijzingPaneel from "./ToewijzingPaneel";
 
 /** Sentinel voor "Algemeen" (geen toewijzing); Radix Select staat geen lege waarde toe. */
 const ALGEMEEN = "__algemeen__";
@@ -52,10 +53,14 @@ export default function ClassificatieTab({ bronnen, onChange }: Props) {
     (b) => CLASSIFICEERBARE_TYPES.includes(b.type) && !b.fout && b.type_bevestigd && b.rijen.length > 0,
   );
 
-  if (teClassificeren.length === 0) {
+  const teKoppelen = bronnen.filter(
+    (b) => b.type === "gedeclareerde_uren" && !b.fout && b.type_bevestigd && b.rijen.length > 0,
+  );
+
+  if (teClassificeren.length === 0 && teKoppelen.length === 0) {
     return (
       <p className="text-sm text-muted-foreground">
-        Geen bestanden om te classificeren. Upload zorgopbrengsten, inhuur of directe uren.
+        Geen bestanden om te classificeren. Upload zorgopbrengsten, inhuur, directe uren of gedeclareerde uren.
       </p>
     );
   }
@@ -64,6 +69,9 @@ export default function ClassificatieTab({ bronnen, onChange }: Props) {
     <div className="space-y-6">
       {teClassificeren.map((b) => (
         <ClassificatiePaneel key={b.id} bron={b} onChange={onChange} />
+      ))}
+      {teKoppelen.map((b) => (
+        <ToewijzingPaneel key={b.id} bron={b} onChange={onChange} />
       ))}
     </div>
   );

@@ -1,6 +1,6 @@
 # Roadmap — Zorg Controle Basis
 
-**Versie:** 0.5 — 19 oktober 2026
+**Versie:** 0.6 — 19 oktober 2026
 **Status:** concept, wordt herzien aan het einde van elke sessie (zie "Herzien")
 
 ## Doel
@@ -72,7 +72,7 @@ Gemeten op `main`, commit `4a1f9b4` (19 oktober 2026), vóór de patch met randg
 | `npm audit` (productie) | 19 meldingen, waarvan 17 hoog en 0 kritiek |
 | Niet gemeten | testdekking van `bronnen.ts`; import met echte `Journaalposten.pdf` |
 
-Stand na de patches van 19 oktober (branch `verbandcontrole-uren`): 16 testbestanden en 121 tests, typecheck, lint en build in orde.
+Stand na stap 2.0.3 en 2.0.3b: 19 testbestanden en 150 tests, typecheck, lint en build in orde.
 
 ## Wat de app nu heeft, en wat ontbreekt
 
@@ -125,8 +125,8 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 - [x] 2.0.0 Mijn toestemming voor `src/core/`; definities en drempels uit de sectie "Kerntaak" bevestigd
 - [x] 2.0.1 Brontype "gedeclareerde uren" via Excel of CSV: kolommen en eenheid worden geraden, ik bevestig met één klik. Test: een fictief declaratiebestand komt goed binnen (gebouwd; nog niet in de score en nog niet aan projecten te koppelen)
 - [ ] 2.0.2 Ingang factuurregels (aantal en eenheid), nodig voor PGB. Test: een fictieve factuur-PDF
-- [ ] 2.0.3 Eenheden omrekenen en toepasbaarheid per stroom (Wlz-verblijf grijs), met een eenheid-kiezer in de app voor bronnen zonder herkenbare eenheid. Test: de acht proefsituaties als vaste tests
-- [ ] 2.0.3b Gedeclareerde uren aan een project koppelen (stap Classificatie), nodig voor de vergelijking per project
+- [x] 2.0.3 Eenheden omrekenen en toepasbaarheid per stroom (Wlz-verblijf grijs), met een eenheid-kiezer in de app voor bronnen zonder herkenbare eenheid. Test: de acht proefsituaties als vaste tests (gebouwd; Wlz zonder verblijf geldt als onzeker en telt mee met een melding)
+- [x] 2.0.3b Gedeclareerde uren aan een project koppelen (stap Classificatie), nodig voor de vergelijking per project (gebouwd: eigen paneel met per-regel keuze, bulkkeuze en "Koppel automatisch op stroom")
 - [ ] 2.0.4 Nieuwe kerncontrole per project met asymmetrische drempels en gesaldeerde correcties (raakt `src/core/`). Test: een fictief dossier met omzet, uren en declaraties; klopt score en dekking
 - [ ] 2.0.5 Scherm "Uren-controle": kleur per project, uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt bij afwijking. Test: handmatige doorloop van het fictieve dossier (10 minuten)
 - [ ] 2.0.6 Aparte tariefcontrole: omzet per gedeclareerd uur tegen het afgesproken tarief
@@ -183,7 +183,7 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 | 6 | Is een aansluitverschil alleen oranje goed, of moet bij een grote afwijking ook rood mogelijk zijn? | Naoufal | open |
 | 7 | Mag de periode uit de afdrukdatum van het journaal komen als er geen label "Periode" staat? | Naoufal | open |
 | 8 | Zit CBS-benchmarking al in de app? | Claude | uitzoeken |
-| 9 | Declareert Wlz thuis (VPT of MPT) in uren? Niet nagegaan | Naoufal | open |
+| 9 | Declareert Wlz thuis (VPT of MPT) in uren? Niet nagegaan. De app behandelt Wlz zonder verblijf nu als onzeker: de uren tellen mee, met een melding | Naoufal | open |
 | 10 | Telt reistijd mee bij Wmo? Hangt af van de afspraken met de gemeente | Naoufal | open |
 | 11 | Zijn de drempels uit de sectie "Kerntaak" goed, of liever andere? | Naoufal | voorstel |
 | 12 | Een geanonimiseerd declaratiebestand van een klant, voor 2.0.1 | Naoufal | open |
@@ -205,3 +205,4 @@ Aan het einde van elke sessie, samen met `HANDOFF.md`:
 | 2026-10-19 | 0.3 | Patch met randgevallen, `ROADMAP.md` en `HANDOFF.md` in de repo gezet; Fase 0 deels afgevinkt |
 | 2026-10-19 | 0.4 | Kerntaak toegevoegd: verbandcontrole gedeclareerde tegen gewerkte uren (onderdeel 2.0, nu eerst in mijlpaal 2). Vastgelegd: vier stromen, niveau per project, directe uren zonder reistijd, asymmetrische drempels, factuurregels eerder voor PGB, wijkverpleging declareert op planning. Fictieve proef van acht situaties. Open vragen 9 tot 12 |
 | 2026-10-19 | 0.5 | Getalfout opgelost (decimale punt werd 10 tot 100 keer te groot gelezen). Onderdeel 2.0.0 en 2.0.1 afgerond. Onderdeel 2.0.3b toegevoegd (koppeling aan projecten). Stand: 16 testbestanden, 121 tests |
+| 2026-10-19 | 0.6 | Stap 2.0.3 (eenheid-kiezer en toepasbaarheid per stroom) en 2.0.3b (koppeling aan kostenplaatsen) afgerond. Stand: 19 testbestanden, 150 tests. Volgende: 2.0.4, de controle in de rekenkern |
