@@ -9,14 +9,11 @@ import type {
   NonProductiveHoursRecord,
 } from "@/core";
 import { normalizeStroom, detectStroom } from "@/core";
-import { listBronnen, type BronBestand, type BronType } from "@/lib/bronnen";
+import { listBronnen, parseGetal, type BronBestand, type BronType } from "@/lib/bronnen";
 
 /** Parse Nederlands of internationaal getal naar number; NaN als ongeldig. */
 function parseNumber(raw: string | undefined): number {
-  if (!raw) return NaN;
-  const s = raw.trim().replace(/\s/g, "").replace(/\./g, "").replace(",", ".");
-  const n = Number(s);
-  return Number.isFinite(n) ? n : NaN;
+  return parseGetal(raw);
 }
 
 function colVal(b: BronBestand, row: string[], veld: string): string | undefined {

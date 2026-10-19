@@ -336,6 +336,34 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
 const MAANDEN = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
 const BEDRAG_RE = /€?\s*-?\d{1,3}(?:\.\d{3})*,\d{2}|€\s*-?\d+(?:,\d{2})?/;
 
+/**
+ * Leest een getal uit tekst, zowel Nederlands ("1.234,56", "7,5") als met decimale punt
+ * ("1234.56", "7.5", zoals uit Excel en uit herkende PDF's). Geeft NaN als het geen getal is.
+ * Een punt met precies drie cijfers erachter ("1.500") geldt als duizendtalscheiding.
+ */
+export function parseGetal(raw: string | undefined | null): number {
+  if (raw === undefined || raw === null) return NaN;
+  let s = String(raw).replace(/[€\s\u00a0]/g, "");
+  if (s === "") return NaN;
+  let negatief = false;
+  if (s.endsWith("-")) {
+    negatief = true;
+    s = s.slice(0, -1);
+  }
+  const komma = s.lastIndexOf(",");
+  const punt = s.lastIndexOf(".");
+  if (komma >= 0 && punt >= 0) {
+    s = komma > punt ? s.replace(/\./g, "").replace(/,/g, ".") : s.replace(/,/g, "");
+  } else if (komma >= 0) {
+    s = s.replace(/,/g, ".");
+  } else if (punt >= 0 && /^-?[1-9]\d{0,2}(\.\d{3})+$/.test(s)) {
+    s = s.replace(/\./g, "");
+  }
+  if (!/^-?\d+(\.\d+)?$/.test(s)) return NaN;
+  const n = Number(s);
+  return negatief ? -n : n;
+}
+
 /** "€ 1.500,00" -> "1500.00" */
 export function nlBedragNaarGetal(s: string): string | null {
   const m = s.match(BEDRAG_RE);
