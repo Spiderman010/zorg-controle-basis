@@ -20,13 +20,15 @@
 - Bulkactie "Alle regels naar kostenplaats" vraagt nu bevestiging als er al koppelingen zijn ("X regels hebben al een kostenplaats. Overschrijven?"); zonder koppelingen direct
 - `.gitignore`: back-upbestanden (back-up-zorg-controle-basis-*.json) worden nooit meer gecommit
 
+- Scherm Controle: tegels Resturen en Resturen euro-impact tonen "—" met de hint "Geen betaalde uren aangeleverd" zonder betaalde uren; het financieringsmix-signaal is een neutrale badge "Info" in plaats van oranje
+
 ## Huidige staat
-- **Branch:** `gebruiksvriendelijk` (vanaf `main`), nog niet gemerged
-- **Laatste commit:** de laatste commit op de branch `gebruiksvriendelijk`
-- **Pull request:** nog niet gemaakt en niet gemerged; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...gebruiksvriendelijk
+- **Branch:** `controle-duidelijkheid` (vanaf `main`), nog niet gemerged
+- **Laatste commit:** de laatste commit op de branch `controle-duidelijkheid`
+- **Pull request:** nog niet gemaakt en niet gemerged; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...controle-duidelijkheid
 - **Deploy status:** Lovable-preview, niet gecontroleerd
 - **Runtime-fouten:** niet gemeten
-- **Tests:** 31 testbestanden en 245 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
+- **Tests:** 33 testbestanden en 249 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
 
 ## Openstaande taken
 - [ ] Pull request maken en mergen (branch `gebruiksvriendelijk` naar `main`)
