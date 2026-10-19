@@ -276,6 +276,8 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
   const tabel = regels.map(naarCellen);
   const factuur = herkenFactuur(regels, tabel);
   if (factuur) return factuur;
+  const loon = herkenLoonspecificatie(tabel);
+  if (loon) return loon;
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");

@@ -72,9 +72,8 @@ export function deleteProject(id: string) {
   write(read().filter((p) => p.id !== id));
 }
 
-/** Weergavenaam, bv. "M Bouzian (Cliënt via Lea's Zorghart)". */
-export function projectLabel(p: Project, alle: Project[]): string {
-  if (!p.rol) return p.naam;
-  const via = p.rol === "client" && p.via_id ? alle.find((x) => x.id === p.via_id) : undefined;
-  return via ? `${p.naam} (${ROL_KORT[p.rol]} via ${via.naam})` : `${p.naam} (${ROL_KORT[p.rol]})`;
+/** Weergavenaam: alleen de naam, zonder rol of opdrachtgever tussen haakjes. */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function projectLabel(p: Project, _alle?: Project[]): string {
+  return p.naam;
 }
