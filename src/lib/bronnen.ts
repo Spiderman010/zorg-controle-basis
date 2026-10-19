@@ -276,6 +276,8 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
   const tabel = regels.map(naarCellen);
   const factuur = herkenFactuur(regels, tabel);
   if (factuur) return factuur;
+  const loon = herkenLoonspecificatie(tabel);
+  if (loon) return loon;
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
@@ -301,6 +303,93 @@ export function nlBedragNaarGetal(s: string): string | null {
 }
 
 export const FACTUUR_KOLOMMEN = ["Periode", "Factuurnummer", "Factuurdatum", "Debiteur", "Categorie", "Omschrijving", "Bedrag"];
+export const LOON_KOLOMMEN = ["Periode", "Medewerker", "Looncomponent", "Bedrag"];
+
+/**
+ * Herkent een salarisspecificatie (loonstrook) en haalt het brutoloon per medewerker eruit.
+ * Eén rij: periode (JJJJ-MM), medewerker, "Brutoloon", bedrag.
+ */
+export function herkenLoonspecificatie(tabel: string[][]): { headers: string[]; rows: string[][] } | null {
+  const regels = tabel.map((c) => c.join(" "));
+  const volledig = regels.join("\n");
+  if (!/salarisspecificatie|loonstrook|loonspecificatie/i.test(volledig)) return null;
+
+  const jaar = volledig.match(/\b(20\d{2})\b/)?.[1] ?? String(new Date().getFullYear());
+  const mi = MAANDEN.findIndex((m) => new RegExp(`\\b${m}\\b`, "i").test(volledig));
+  const periodeNr = volledig.match(/periode\D{0,20}?\b(\d{1,2})\b/i)?.[1];
+  const maand = mi >= 0 ? mi + 1 : periodeNr ? Number(periodeNr) : 0;
+  const periode = maand >= 1 && maand <= 12 ? `${jaar}-${String(maand).padStart(2, "0")}` : jaar;
+
+  // Medewerker: cel na "Werknemer gegevens" / "Naam".
+  let medewerker = "";
+  for (const c of tabel) {
+    const i = c.findIndex((x) => /werknemer|^naam\b/i.test(x));
+    if (i >= 0 && c[i + 1]) {
+      medewerker = c[i + 1].trim();
+      break;
+    }
+  }
+
+  // Brutoloon: regel met "bruto" (niet "netto") en een bedrag; neem het grootste bedrag op die regel.
+  let bruto: number | null = null;
+  for (const c of tabel) {
+    const t = c.join(" ");
+    if (!/bruto/i.test(t) || /netto/i.test(t)) continue;
+    const bedragen = c
+      .slice(1)
+      .map((x) => x.match(/-?\d{1,3}(?:\.\d{3})*,\d{2}|-?\d+,\d{2}/)?.[0])
+      .filter((x): x is string => !!x)
+      .map((x) => Number(x.replace(/\./g, "").replace(",", ".")));
+    if (bedragen.length > 0) {
+      bruto = Math.max(...bedragen);
+      break;
+    }
+  }
+  if (bruto === null) return null;
+  return { headers: [...LOON_KOLOMMEN], rows: [[periode, medewerker, "Brutoloon", bruto.toFixed(2)]] };
+}
+
+// ---- Dubbele facturen ----
+export interface DubbeleFactuur {
+  sleutel: string;
+  factuurnummer: string;
+  relatie: string;
+  bedrag: string;
+  voorkomens: { bronId: string; bestandsnaam: string; rij: number }[];
+}
+
+function kolom(headers: string[], namen: string[]): number {
+  const lager = headers.map((h) => h.toLowerCase());
+  for (const n of namen) {
+    const i = lager.findIndex((h) => h.includes(n));
+    if (i >= 0) return i;
+  }
+  return -1;
+}
+
+/** Zoekt facturen die vaker voorkomen op basis van factuurnummer + leverancier/debiteur + bedrag. */
+export function vindDubbeleFacturen(bronnen: BronBestand[]): DubbeleFactuur[] {
+  const groepen = new Map<string, DubbeleFactuur>();
+  for (const b of bronnen) {
+    if (b.fout || b.type === "niet_gebruiken") continue;
+    const nr = kolom(b.headers, ["factuurnummer", "factuurnr", "factuur"]);
+    const rel = kolom(b.headers, ["debiteur", "leverancier", "crediteur", "relatie"]);
+    const bed = b.mapping?.bedrag ? b.headers.indexOf(b.mapping.bedrag) : kolom(b.headers, ["bedrag"]);
+    if (nr < 0 || rel < 0 || bed < 0) continue;
+    b.rijen.forEach((r, i) => {
+      const n = (r[nr] ?? "").trim();
+      if (!n) return;
+      const relatie = (r[rel] ?? "").trim();
+      const bedragNum = Number(String(r[bed] ?? "").replace(",", "."));
+      const bedrag = Number.isFinite(bedragNum) ? bedragNum.toFixed(2) : String(r[bed] ?? "").trim();
+      const sleutel = `${n.toLowerCase()}|${relatie.toLowerCase()}|${bedrag}`;
+      const g = groepen.get(sleutel) ?? { sleutel, factuurnummer: n, relatie, bedrag, voorkomens: [] };
+      g.voorkomens.push({ bronId: b.id, bestandsnaam: b.bestandsnaam, rij: i });
+      groepen.set(sleutel, g);
+    });
+  }
+  return [...groepen.values()].filter((g) => g.voorkomens.length > 1);
+}
 
 /**
  * Herkent een losse verkoopfactuur (factuurnummer + "Totaalbedrag excl. btw")
@@ -441,9 +530,19 @@ const VELD_SYNONIEMEN: Record<string, string[]> = {
 
 export function suggestMapping(type: Exclude<BronType, "niet_gebruiken">, headers: string[]): Record<string, string> {
   const result: Record<string, string> = {};
+  // Herkende factuur/loonstrook: vaste koppeling, zodat "bedrag" nooit op een naamkolom valt.
+  if (headers.join("|") === FACTUUR_KOLOMMEN.join("|")) {
+    const relatieVeld = type === "zorgopbrengsten" ? "rekening_of_categorie" : "leverancier_of_omschrijving";
+    return { periode: "Periode", bedrag: "Bedrag", [relatieVeld]: "Omschrijving" };
+  }
+  if (headers.join("|") === LOON_KOLOMMEN.join("|")) {
+    return { periode: "Periode", bedrag: "Bedrag", looncomponent: "Looncomponent", medewerker: "Medewerker" };
+  }
   for (const veld of [...VERPLICHTE_VELDEN[type], ...(OPTIONELE_VELDEN[type] ?? [])]) {
     const syns = VELD_SYNONIEMEN[veld] || [veld];
-    const match = headers.find((h) => syns.some((s) => h.toLowerCase().includes(s)));
+    const match =
+      headers.find((h) => h.toLowerCase() === veld) ??
+      headers.find((h) => syns.some((s) => h.toLowerCase().includes(s)));
     if (match) result[veld] = match;
   }
   return result;
