@@ -20,6 +20,7 @@ import {
   bewaarPdf,
   getPdf,
   upsertBron,
+  vindDubbeleFacturen,
 } from "@/lib/bronnen";
 
 interface Props {
@@ -38,7 +39,10 @@ const KAARTEN: Exclude<BronType, "niet_gebruiken">[] = [
 ];
 
 export default function UploadTab({ dossierId, bronnen, onChange }: Props) {
+  const dubbel = vindDubbeleFacturen(bronnen);
   return (
+    <div className="space-y-4">
+      {dubbel.length > 0 && <DubbeleFacturenMelding dubbel={dubbel} bronnen={bronnen} onChange={onChange} />}
     <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {KAARTEN.map((type) => (
         <BronKaart
@@ -54,6 +58,85 @@ export default function UploadTab({ dossierId, bronnen, onChange }: Props) {
         onChange={onChange}
       />
     </div>
+    </div>
+  );
+}
+
+function DubbeleFacturenMelding({
+  dubbel,
+  bronnen,
+  onChange,
+}: {
+  dubbel: ReturnType<typeof vindDubbeleFacturen>;
+  bronnen: BronBestand[];
+  onChange: () => void;
+}) {
+  // Verwijder de rij uit alle latere voorkomens; het eerste voorkomen blijft staan.
+  const verwijderDubbel = (g: (typeof dubbel)[number]) => {
+    const perBron = new Map<string, number[]>();
+    for (const v of g.voorkomens.slice(1)) perBron.set(v.bronId, [...(perBron.get(v.bronId) ?? []), v.rij]);
+    for (const [bronId, rijen] of perBron) {
+      const b = bronnen.find((x) => x.id === bronId);
+      if (!b) continue;
+      const weg = new Set(rijen);
+      if (weg.size >= b.rijen.length) {
+        deleteBron(b.id);
+        continue;
+      }
+      // Indexen van classificaties/toewijzingen opnieuw nummeren.
+      const nieuwIdx = new Map<number, number>();
+      let j = 0;
+      b.rijen.forEach((_, i) => {
+        if (!weg.has(i)) nieuwIdx.set(i, j++);
+      });
+      const herNummer = <T,>(m?: Record<number, T>) => {
+        if (!m) return m;
+        const out: Record<number, T> = {};
+        for (const [k, v] of Object.entries(m)) {
+          const n = nieuwIdx.get(Number(k));
+          if (n !== undefined) out[n] = v;
+        }
+        return out;
+      };
+      upsertBron({
+        ...b,
+        rijen: b.rijen.filter((_, i) => !weg.has(i)),
+        classificaties: herNummer(b.classificaties),
+        projecttoewijzingen: herNummer(b.projecttoewijzingen),
+      });
+    }
+    onChange();
+  };
+  return (
+    <Card className="border-destructive/50 bg-destructive/5">
+      <CardHeader>
+        <CardTitle className="text-base text-destructive">Mogelijk dubbele facturen ({dubbel.length})</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-xs text-muted-foreground">
+          Deze facturen komen vaker voor met hetzelfde factuurnummer, dezelfde relatie en hetzelfde bedrag. Controleer ze
+          voordat u verder gaat met classificeren.
+        </p>
+        <ul className="space-y-2">
+          {dubbel.map((g) => (
+            <li key={g.sleutel} className="flex flex-wrap items-center justify-between gap-2 rounded-md border bg-card p-2 text-sm">
+              <div>
+                <div className="font-medium">
+                  Factuur {g.factuurnummer} — {g.relatie || "onbekende relatie"} —{" "}
+                  {Number(g.bedrag).toLocaleString("nl-NL", { style: "currency", currency: "EUR" })}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {g.voorkomens.length}x in: {[...new Set(g.voorkomens.map((v) => v.bestandsnaam))].join(", ")}
+                </div>
+              </div>
+              <Button size="sm" variant="outline" onClick={() => verwijderDubbel(g)}>
+                Dubbele verwijderen
+              </Button>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
 
