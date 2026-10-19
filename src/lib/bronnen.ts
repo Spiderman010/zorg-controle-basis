@@ -1,5 +1,6 @@
 // Client-side opslag voor bronbestanden, mappings en classificaties (Fase 2B).
 // Later vervangen door Lovable Cloud.
+import { normalizeStroom } from "@/core";
 
 export type BronType =
   | "zorgopbrengsten"
@@ -78,6 +79,8 @@ export interface BronBestand {
   mapping?: Record<string, string>; // verplichtveld -> headernaam
   classificaties?: Record<number, Classificatie>; // index -> klasse
   projecttoewijzingen?: Record<number, string>; // index -> project_id
+  /** Gedeclareerde uren: eenheid die de gebruiker zelf heeft gekozen (wint van automatische herkenning). */
+  eenheid?: Eenheid;
   fout?: string;
 }
 
@@ -728,10 +731,26 @@ export interface GedeclareerdeUrenRegel {
   periode: string;
   aantal: number; // zoals aangeleverd (NaN als onleesbaar)
   eenheid: Eenheid;
-  eenheidBron: "regel" | "kolomnaam" | "aangenomen";
-  uren?: number; // in uren; leeg bij dagen of een onleesbaar aantal
+  eenheidBron: "gekozen" | "regel" | "kolomnaam" | "aangenomen";
+  uren?: number; // in uren; leeg bij dagen, een onleesbaar aantal of een stroom zonder uren
   stroom?: string;
-  reden?: "dagen" | "ongeldig";
+  /** Declareert deze stroom in uren? "onzeker" = nog niet vastgesteld (Wlz zonder verblijf). */
+  toepasbaar: Toepasbaar;
+  reden?: "dagen" | "ongeldig" | "niet_in_uren";
+}
+
+export type Toepasbaar = "ja" | "nee" | "onzeker";
+
+/**
+ * Beoordeelt of een financieringsstroom in uren declareert.
+ * Wlz-verblijf declareert per dag: "nee". Wlz zonder verblijf (bijvoorbeeld VPT of MPT) is "onzeker":
+ * dat is nog niet vastgesteld en telt dus wel mee, maar wordt gemeld. Alle andere stromen: "ja".
+ */
+export function declareertInUren(stroomTekst: string | undefined | null): Toepasbaar {
+  const t = (stroomTekst ?? "").trim();
+  if (t === "") return "ja";
+  if (normalizeStroom(t) !== "wlz") return "ja";
+  return /verblijf|intramuraal|\bvv\b|\bzzp\b/i.test(t) ? "nee" : "onzeker";
 }
 
 /**
@@ -750,11 +769,18 @@ export function leesGedeclareerdeUren(b: BronBestand): GedeclareerdeUrenRegel[] 
   return b.rijen.map((r, regel) => {
     const aantal = parseGetal(r[iAantal]);
     const perRegel = iEenheid >= 0 ? herkenEenheid(r[iEenheid]) : undefined;
-    const eenheid: Eenheid = perRegel ?? uitKop ?? "uren";
-    const eenheidBron = perRegel ? "regel" : uitKop ? "kolomnaam" : "aangenomen";
-    const uren = Number.isNaN(aantal) ? undefined : naarUren(aantal, eenheid);
-    const reden = Number.isNaN(aantal) ? "ongeldig" : eenheid === "dagen" ? "dagen" : undefined;
+    const eenheid: Eenheid = b.eenheid ?? perRegel ?? uitKop ?? "uren";
+    const eenheidBron = b.eenheid ? "gekozen" : perRegel ? "regel" : uitKop ? "kolomnaam" : "aangenomen";
     const stroom = iStroom >= 0 ? (r[iStroom] ?? "").trim() || undefined : undefined;
+    const toepasbaar = declareertInUren(stroom);
+    const reden = Number.isNaN(aantal)
+      ? "ongeldig"
+      : toepasbaar === "nee"
+        ? "niet_in_uren"
+        : eenheid === "dagen"
+          ? "dagen"
+          : undefined;
+    const uren = Number.isNaN(aantal) || toepasbaar === "nee" ? undefined : naarUren(aantal, eenheid);
     return {
       regel,
       periode: iPeriode >= 0 ? (r[iPeriode] ?? "").trim() : "",
@@ -763,6 +789,7 @@ export function leesGedeclareerdeUren(b: BronBestand): GedeclareerdeUrenRegel[] 
       eenheidBron,
       uren,
       stroom,
+      toepasbaar,
       reden,
     } as GedeclareerdeUrenRegel;
   });
@@ -875,11 +902,15 @@ export function valideerBron(b: BronBestand): ValidatieResultaat {
   if (b.type === "gedeclareerde_uren") {
     const regels = leesGedeclareerdeUren(b);
     const aangenomen = regels.filter((r) => r.eenheidBron === "aangenomen").length;
-    const dagen = regels.filter((r) => r.eenheid === "dagen").length;
+    const dagen = regels.filter((r) => r.eenheid === "dagen" && r.toepasbaar !== "nee").length;
+    const nietInUren = regels.filter((r) => r.toepasbaar === "nee").length;
+    const onzeker = regels.filter((r) => r.toepasbaar === "onzeker").length;
     if (aangenomen > 0) {
       waarschuwingen.push(`Eenheid niet herkend bij ${aangenomen} regel(s): uren aangenomen. Controleer of dit echt uren zijn.`);
     }
     if (dagen > 0) signalen.push(`${dagen} regel(s) in dagen: tellen niet mee als uren.`);
+    if (nietInUren > 0) signalen.push(`${nietInUren} regel(s) van een stroom die niet in uren declareert (bijvoorbeeld Wlz-verblijf): geen oordeel, de controle blijft grijs.`);
+    if (onzeker > 0) signalen.push(`${onzeker} regel(s) Wlz zonder verblijf: nog niet vastgesteld of dit in uren wordt gedeclareerd. Ze tellen wel mee.`);
     const eenheden = [...new Set(regels.filter((r) => r.eenheidBron !== "aangenomen").map((r) => EENHEID_LABEL[r.eenheid]))];
     if (eenheden.length > 0) signalen.push(`Eenheid: ${eenheden.join(", ")}.`);
   }
