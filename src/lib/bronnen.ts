@@ -646,6 +646,17 @@ export function suggestMapping(type: Exclude<BronType, "niet_gebruiken">, header
     const relatieVeld = type === "zorgopbrengsten" ? "rekening_of_categorie" : "leverancier_of_omschrijving";
     return { periode: "Periode", bedrag: "Bedrag", [relatieVeld]: "Omschrijving" };
   }
+  if (type === "personeelskosten" && headers.some((h) => /^(debet|credit)$/i.test(h.trim()))) {
+    const vind = (re: RegExp) => headers.find((h) => re.test(h.trim()));
+    const bedrag = vind(/^bedrag$/i) ?? vind(/^debet$/i) ?? vind(/^credit$/i);
+    const comp = vind(/^omschrijving$/i) ?? vind(/^(grootboek|rekening)/i);
+    const per = vind(/^periode$/i) ?? headers.find((h) => /periode|maand|datum/i.test(h));
+    const m: Record<string, string> = {};
+    if (per) m.periode = per;
+    if (bedrag) m.bedrag = bedrag;
+    if (comp) m.looncomponent = comp;
+    return m;
+  }
   if (headers.join("|") === LOON_KOLOMMEN.join("|")) {
     return { periode: "Periode", bedrag: "Bedrag", looncomponent: "Looncomponent", medewerker: "Medewerker" };
   }
