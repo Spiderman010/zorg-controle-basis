@@ -7,11 +7,11 @@
 - `ROADMAP.md` (v0.3) opgesteld en deze handoff aangemaakt
 
 ## Huidige staat
-- **Branch:** main
-- **Laatste commit:** de commit met patch, `ROADMAP.md` en `HANDOFF.md` (daarvoor `4a1f9b4`)
+- **Branch:** `verbandcontrole-uren` (vanaf `3eb815d`, nog niet gemerged naar `main`)
+- **Laatste commit:** nog geen commit op deze branch; de wijzigingen staan ongecommit klaar
 - **Deploy status:** Lovable-preview, niet gecontroleerd
 - **Runtime-fouten:** niet gemeten
-- **Tests:** verwacht 13 testbestanden en 86 tests
+- **Tests:** 16 testbestanden en 121 tests, alles groen; typecheck, lint en build in orde
 
 ## Openstaande taken
 - [ ] `npm install` is lokaal gedraaid: de gewijzigde `package-lock.json` committen
@@ -26,7 +26,7 @@
 - Opslag alleen in de browser (`localStorage`): een gewist profiel kost dossiers
 
 ## Volgende sessie: begin hier
-Draai `git pull` en `npx vitest run` (verwacht 86 tests), upload daarna `Journaalposten.pdf` opnieuw en stuur de ruwe uitvoer van `pdfItemsNaarTabel()` mee.
+Draai `git pull` en `npx vitest run` (verwacht 121 tests). Laat daarna een geanonimiseerd declaratiebestand van een klant inlezen via het brontype "gedeclareerde uren" (onderdeel 2.0.1, open vraag 12 in `ROADMAP.md`), en controleer of de kolommen en eenheid goed worden geraden.
 
 ## Bestanden gewijzigd
 - `src/lib/bronnen.ts` — loonjournaal: min-teken, geen terugval op briefhoofd, tekstkolommen, lege periode

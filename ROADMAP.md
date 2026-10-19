@@ -1,6 +1,6 @@
 # Roadmap — Zorg Controle Basis
 
-**Versie:** 0.3 — 19 oktober 2026
+**Versie:** 0.5 — 19 oktober 2026
 **Status:** concept, wordt herzien aan het einde van elke sessie (zie "Herzien")
 
 ## Doel
@@ -21,6 +21,22 @@ Een controle-instrument voor mijn zorgklanten (MKB-zorg: thuiszorg, VVT). Bronne
 | Wat de app niet doet | Gegevens corrigeren, fiatteren, plannen of verdelen. Dat is werk van het bronsysteem en zou de onafhankelijkheid aantasten. |
 | Uit de Nedap-patronen overnemen | Een expliciete afkapregel per bron, verschillen verklaren, ruwe en afgeleide waarden naast elkaar, en herkomst per bron vastleggen. |
 | Oordelen | Een indeling (zorginhuur, direct of niet-productief) is mijn oordeel en geen feit uit de bron. Dat leg ik vast met datum en reden. |
+
+## Kerntaak: verbandcontrole gedeclareerde en gewerkte uren
+
+Dit is de belangrijkste taak van de app. Onderdeel 2.0 hieronder werkt hem uit.
+
+| Onderwerp | Afspraak |
+|---|---|
+| Stromen | Zvw wijkverpleging, Wlz, Wmo en PGB. Wlz-verblijf declareert per dag en blijft grijs. PGB loopt via facturen. |
+| Niveau | Per project (opdrachtgever of stroom, de sleutel die de app al heeft). Alleen bij een afwijking uitsplitsen per cliënt. |
+| Gewerkte uren | Directe, cliëntgebonden uren, inclusief verplaatste directe contacttijd en indicatiestelling. Niet: reistijd, overleg, scholing, verlof. Reistijd is een schakelaar per klant of stroom. |
+| Richting | Niet symmetrisch. Te veel gedeclareerd is het grootste risico (terugvordering) en strenger. Te weinig gedeclareerd is gemiste omzet. |
+| Drempels (voorstel, instelbaar per stroom) | Te veel: oranje boven 1%, rood boven 3%. Te weinig: oranje boven 5%, rood boven 15%. Voor wijkverpleging ruimer. |
+| Wijkverpleging | Declareert op planning ("zorgplan = planning = realisatie, tenzij") en niet op geregistreerde minuten. Een verschil kan dus de planning zijn. Daarom later een optionele derde waarde: geplande uren. |
+| Eenheden | Uren, minuten en vijfminuteneenheden worden eerst naar uren omgerekend. |
+| Uren en tarief | Twee aparte controles: uren tegen uren, en omzet per gedeclareerd uur tegen het afgesproken tarief. |
+| Bron | Alle ingangen moeten kunnen: Excel of CSV, factuurregels, systeem-export (bijvoorbeeld Nedap Ons) en als laatste redmiddel een handmatig totaal. Het rapport meldt het bewijsniveau van de bron. |
 
 ## Prioriteit (door Naoufal bepaald)
 
@@ -56,6 +72,8 @@ Gemeten op `main`, commit `4a1f9b4` (19 oktober 2026), vóór de patch met randg
 | `npm audit` (productie) | 19 meldingen, waarvan 17 hoog en 0 kritiek |
 | Niet gemeten | testdekking van `bronnen.ts`; import met echte `Journaalposten.pdf` |
 
+Stand na de patches van 19 oktober (branch `verbandcontrole-uren`): 16 testbestanden en 121 tests, typecheck, lint en build in orde.
+
 ## Wat de app nu heeft, en wat ontbreekt
 
 | Onderdeel | Stand |
@@ -66,6 +84,7 @@ Gemeten op `main`, commit `4a1f9b4` (19 oktober 2026), vóór de patch met randg
 | Zichtbaar hoeveel controles uitvoerbaar zijn ("x van 9") en een betrouwbaarheidsniveau | aanwezig |
 | Rapportage met samenvatting, actiepunten en PDF via afdrukken | aanwezig |
 | **Aansluiting op een tweede bron** (omzet, personeel, inhuur, betaalde uren) | **kern is er, maar `secondary_totals` wordt in de echte app nergens gevuld: 4 van de 9 kerncontroles blijven grijs** |
+| **Gedeclareerde uren** (het begrip, de import en de controle) | **ontbreekt: een zorgopbrengst heeft alleen een bedrag en een stroom, geen uren. De soll-omzetcontrole vergelijkt alleen euro's** |
 | Verschillen verklaren (afkapregel, bekende oorzaak) | ontbreekt |
 | Herkomst per bron (systeem, soort export, exportdatum, periode) | beperkt: bestandsnaam en uploadmoment |
 | Ruwe en afgeleide waarden naast elkaar | ontbreekt |
@@ -78,6 +97,7 @@ Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code ni
 - [x] Patch met randgevallen toegepast (min-teken, geen terugval op briefhoofd, tekstkolommen, periode)
 - [ ] `package-lock.json` synchroniseren: `npm install` is gedraaid, de gewijzigde lockfile nog committen
 - [x] `ROADMAP.md` en `HANDOFF.md` in de root van de repo gezet
+- [x] Getalfout opgelost: bedragen en uren met een decimale punt (uit Excel en herkende PDF's) werden 10 tot 100 keer te groot gelezen in `datasetBuilder`; nu één gedeelde functie `parseGetal` met tests
 - [ ] `Journaalposten.pdf` opnieuw uploaden na de patch en de ruwe uitvoer van `pdfItemsNaarTabel()` bewaren als geanonimiseerd testvoorbeeld
 
 ## Mijlpaal 1 — Import betrouwbaar
@@ -98,6 +118,28 @@ Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code ni
 
 *Wijzigingen in `src/core/` vragen mijn toestemming.*
 
+### 2.0 Verbandcontrole gedeclareerde tegen gewerkte uren (eerst)
+
+Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tussentijdse test met fictieve data.
+
+- [x] 2.0.0 Mijn toestemming voor `src/core/`; definities en drempels uit de sectie "Kerntaak" bevestigd
+- [x] 2.0.1 Brontype "gedeclareerde uren" via Excel of CSV: kolommen en eenheid worden geraden, ik bevestig met één klik. Test: een fictief declaratiebestand komt goed binnen (gebouwd; nog niet in de score en nog niet aan projecten te koppelen)
+- [ ] 2.0.2 Ingang factuurregels (aantal en eenheid), nodig voor PGB. Test: een fictieve factuur-PDF
+- [ ] 2.0.3 Eenheden omrekenen en toepasbaarheid per stroom (Wlz-verblijf grijs), met een eenheid-kiezer in de app voor bronnen zonder herkenbare eenheid. Test: de acht proefsituaties als vaste tests
+- [ ] 2.0.3b Gedeclareerde uren aan een project koppelen (stap Classificatie), nodig voor de vergelijking per project
+- [ ] 2.0.4 Nieuwe kerncontrole per project met asymmetrische drempels en gesaldeerde correcties (raakt `src/core/`). Test: een fictief dossier met omzet, uren en declaraties; klopt score en dekking
+- [ ] 2.0.5 Scherm "Uren-controle": kleur per project, uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt bij afwijking. Test: handmatige doorloop van het fictieve dossier (10 minuten)
+- [ ] 2.0.6 Aparte tariefcontrole: omzet per gedeclareerd uur tegen het afgesproken tarief
+- [ ] 2.0.7 Optionele derde waarde: geplande uren (wijkverpleging)
+- [ ] 2.0.8 Systeem-export (bijvoorbeeld Nedap Ons) als bron, zodra er een voorbeeld is
+- [ ] 2.0.9 Proef met één echte klant (geanonimiseerd), vergeleken met mijn eigen handmatige controle; `verkoopklaar`-check blok C
+
+**Fictieve testdata:** vaste fictieve dossiers komen als testvoorbeelden in de repo. Een eerste proef met acht situaties is al gedaan in een eigen testomgeving (negen tests geslaagd): bijna gelijk (groen), 10% te veel (rood), 9% te weinig (oranje), Wlz-verblijf (grijs), vijfminuteneenheden, gedeclareerd zonder gewerkte uren (rood), gewerkt zonder declaratie (oranje) en een creditnota die wordt gesaldeerd. Deze proef staat nog niet in de repo.
+
+**Klaar als:** de controle draait voor elke stroom waarvoor uren bestaan, niet-toepasbare stromen netjes grijs blijven, en een echte klant dezelfde conclusie geeft als mijn handmatige controle.
+
+### Overige onderdelen
+
 - [ ] 2.1 **Tweede bron inbouwen:** een export van het grootboek of de subadministratie inlezen en daarmee `secondary_totals` vullen, zodat de vier aansluitcontroles (omzet, personeel, inhuur, betaalde uren) echt draaien
 - [ ] 2.2 Besluit: waarmee wordt het loonjournaal vergeleken en telt alleen Debet of Debet min Credit (zie open vragen)
 - [ ] 2.3 Journaalbalans als eigen controle (Debet gelijk aan Credit)
@@ -106,7 +148,7 @@ Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code ni
 - [ ] 2.6 Tolerantiebanden vastleggen en documenteren per controle (nu: 1 cent, bij een verschil alleen oranje en nooit rood)
 - [ ] 2.7 Per controleresultaat terug te herleiden naar de bronregels
 
-**Klaar als:** alle negen kerncontroles zijn uitvoerbaar zodra de bronnen er zijn; elke controle heeft tests en een vastgelegde norm; de score is reproduceerbaar.
+**Klaar als:** alle kerncontroles zijn uitvoerbaar zodra de bronnen er zijn; elke controle heeft tests en een vastgelegde norm; de score is reproduceerbaar.
 
 ## Mijlpaal 3 — Rapportage en klantweergave
 
@@ -141,6 +183,10 @@ Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code ni
 | 6 | Is een aansluitverschil alleen oranje goed, of moet bij een grote afwijking ook rood mogelijk zijn? | Naoufal | open |
 | 7 | Mag de periode uit de afdrukdatum van het journaal komen als er geen label "Periode" staat? | Naoufal | open |
 | 8 | Zit CBS-benchmarking al in de app? | Claude | uitzoeken |
+| 9 | Declareert Wlz thuis (VPT of MPT) in uren? Niet nagegaan | Naoufal | open |
+| 10 | Telt reistijd mee bij Wmo? Hangt af van de afspraken met de gemeente | Naoufal | open |
+| 11 | Zijn de drempels uit de sectie "Kerntaak" goed, of liever andere? | Naoufal | voorstel |
+| 12 | Een geanonimiseerd declaratiebestand van een klant, voor 2.0.1 | Naoufal | open |
 
 ## Herzien
 
@@ -157,3 +203,5 @@ Aan het einde van elke sessie, samen met `HANDOFF.md`:
 | 2026-10-19 | 0.1 | Roadmap aangemaakt na nulmeting; prioriteit door Naoufal bepaald |
 | 2026-10-19 | 0.2 | Rol en afbakening toegevoegd (geen uren aanbieden, alleen controleren); tabel "wat de app heeft"; tweede bron bovenaan mijlpaal 2; herkomst per bron (1.8, 1.9); dekking, herkomst en oordelen in mijlpaal 3; open vragen uitgebreid |
 | 2026-10-19 | 0.3 | Patch met randgevallen, `ROADMAP.md` en `HANDOFF.md` in de repo gezet; Fase 0 deels afgevinkt |
+| 2026-10-19 | 0.4 | Kerntaak toegevoegd: verbandcontrole gedeclareerde tegen gewerkte uren (onderdeel 2.0, nu eerst in mijlpaal 2). Vastgelegd: vier stromen, niveau per project, directe uren zonder reistijd, asymmetrische drempels, factuurregels eerder voor PGB, wijkverpleging declareert op planning. Fictieve proef van acht situaties. Open vragen 9 tot 12 |
+| 2026-10-19 | 0.5 | Getalfout opgelost (decimale punt werd 10 tot 100 keer te groot gelezen). Onderdeel 2.0.0 en 2.0.1 afgerond. Onderdeel 2.0.3b toegevoegd (koppeling aan projecten). Stand: 16 testbestanden, 121 tests |
