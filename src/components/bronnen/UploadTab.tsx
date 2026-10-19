@@ -24,6 +24,8 @@ import {
   wijzigBronType,
   vindDubbeleFacturen,
 } from "@/lib/bronnen";
+import { datumUitLastModified } from "@/lib/herkomst";
+import { HerkomstBlok } from "./HerkomstBlok";
 
 interface Props {
   dossierId: string;
@@ -297,6 +299,7 @@ function BestandsRij({
           Verwijder
         </Button>
       </div>
+      <HerkomstBlok bron={bron} onChange={onChange} />
       {bron.type_auto_herkend && !bron.type_bevestigd && (
         <p className="mt-1 text-[11px] text-muted-foreground">Type automatisch herkend — bevestig of wijzig.</p>
       )}
@@ -322,6 +325,7 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
     const auto = voorgesteldType ?? detectBronType(file.name, headers);
     const isManueel = !!voorgesteldType;
     const id = crypto.randomUUID();
+    const exportDatum = datumUitLastModified(file.lastModified);
     if (isPdfBestand(file.name)) {
       const dataUrl = await new Promise<string>((res, rej) => {
         const r = new FileReader();
@@ -342,6 +346,8 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
       headers,
       rijen: rows,
       preview_rows: Math.min(5, rows.length),
+      // Exportdatum voorgesteld uit de wijzigingsdatum van het bestand; aanpasbaar in het blok "Herkomst".
+      herkomst: exportDatum ? { export_datum: exportDatum } : undefined,
     });
   } catch (e) {
     const msg =

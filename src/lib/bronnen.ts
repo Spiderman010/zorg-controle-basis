@@ -2,6 +2,7 @@
 // Later vervangen door Lovable Cloud.
 import { normalizeStroom } from "@/core";
 import { veldNaam } from "./veld-labels";
+import type { Herkomst } from "./herkomst";
 
 export type BronType =
   | "zorgopbrengsten"
@@ -83,6 +84,8 @@ export interface BronBestand {
   projecttoewijzingen?: Record<number, string>; // index -> project_id
   /** Gedeclareerde uren: eenheid die de gebruiker zelf heeft gekozen (wint van automatische herkenning). */
   eenheid?: Eenheid;
+  /** Hoe het bestand binnenkwam (optioneel; oudere bronnen hebben dit niet). Hoort bij het bestand, niet bij het type. */
+  herkomst?: Herkomst;
   fout?: string;
 }
 
@@ -952,6 +955,9 @@ export function valideerBron(b: BronBestand): ValidatieResultaat {
       signalen.push(`Nog ${totaal - geclassificeerd} van ${totaal} regels te classificeren.`);
     }
   }
+
+  // Herkomst: alleen een signaal, de status verandert niet.
+  if (!b.herkomst?.manier) signalen.push("Herkomst niet vastgelegd");
 
   const status: ValidatieResultaat["status"] = fouten.length > 0 ? "rood" : waarschuwingen.length > 0 ? "oranje" : "groen";
   return { fouten, waarschuwingen, signalen, status };
