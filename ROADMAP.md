@@ -1,6 +1,6 @@
 # Roadmap — Zorg Controle Basis
 
-**Versie:** 0.8 — 19 oktober 2026
+**Versie:** 0.9 — 19 oktober 2026
 **Status:** concept, wordt herzien aan het einde van elke sessie (zie "Herzien")
 
 ## Doel
@@ -128,7 +128,7 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 - [x] 2.0.3 Eenheden omrekenen en toepasbaarheid per stroom (Wlz-verblijf grijs), met een eenheid-kiezer in de app voor bronnen zonder herkenbare eenheid. Test: de acht proefsituaties als vaste tests (gebouwd; Wlz zonder verblijf geldt als onzeker en telt mee met een melding)
 - [x] 2.0.3b Gedeclareerde uren aan een project koppelen (stap Classificatie), nodig voor de vergelijking per project (gebouwd: eigen paneel met per-regel keuze, bulkkeuze en "Koppel automatisch op stroom")
 - [x] 2.0.4 Nieuwe kerncontrole per project met asymmetrische drempels en gesaldeerde correcties (raakt `src/core/`). Test: een fictief dossier met omzet, uren en declaraties; klopt score en dekking (gebouwd in `src/core/urenverband.ts`: telt mee in de hoofdscore als kerncontrole V1-C10, besluit van Naoufal op 19 oktober; de eindstatus is de slechtste kostenplaats; standaarddrempels 1% en 3% bij te veel, 5% en 15% bij te weinig, per stroom instelbaar in de code; alleen toevoegingen aan de kern)
-- [ ] 2.0.5 Scherm "Uren-controle": kleur per project, uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt bij afwijking. Test: handmatige doorloop van het fictieve dossier (10 minuten). Een basiskaart staat al in het scherm Controle (tabel per kostenplaats met status en toelichting); nog te doen: uitleg in gewone taal, "wat nu?" en uitsplitsing per cliënt
+- [x] 2.0.5 Scherm "Uren-controle": kleur per project, uitleg in gewone taal, een "wat nu?"-zin, uitsplitsing per cliënt bij afwijking. Test: handmatige doorloop van het fictieve dossier (10 minuten). Een basiskaart staat al in het scherm Controle (tabel per kostenplaats met status en toelichting); nog te doen: uitleg in gewone taal, "wat nu?" en uitsplitsing per cliënt (gebouwd; handmatige doorloop in de preview nog open)
 - [ ] 2.0.6 Aparte tariefcontrole: omzet per gedeclareerd uur tegen het afgesproken tarief
 - [ ] 2.0.7 Optionele derde waarde: geplande uren (wijkverpleging)
 - [ ] 2.0.8 Systeem-export (bijvoorbeeld Nedap Ons) als bron, zodra er een voorbeeld is
@@ -209,3 +209,4 @@ Aan het einde van elke sessie, samen met `HANDOFF.md`:
 | 2026-10-19 | 0.6 | Stap 2.0.3 (eenheid-kiezer en toepasbaarheid per stroom) en 2.0.3b (koppeling aan kostenplaatsen) afgerond. Stand: 19 testbestanden, 150 tests. Volgende: 2.0.4, de controle in de rekenkern |
 | 2026-10-19 | 0.7 | Stap 2.0.4 afgerond: kerncontrole gedeclareerde tegen gewerkte uren per kostenplaats, apart getoond in het scherm Controle en niet in de hoofdscore. Dossierketen van bronnen naar controle getest met een fictief dossier. Stand: 22 testbestanden, 182 tests. Open vraag 13 toegevoegd |
 | 2026-10-19 | 0.8 | Besluit open vraag 13: de uren-controle telt mee in de hoofdscore als kerncontrole V1-C10 (tien kerncontroles). Dossiers zonder gedeclareerde uren behouden dezelfde score (de controle is dan grijs). Vier bestaande tests aangepast van 9 naar 10 kerncontroles. Stand: 22 testbestanden, 186 tests |
+| 2026-10-19 | 0.9 | Scherm Uren-controle: uitleg in gewone taal per kostenplaats, een "wat nu?"-zin, en cliënten onder een oranje of rode kostenplaats (2.0.5). Wijziging alleen in de weergave; `src/core` is niet aangeraakt |
