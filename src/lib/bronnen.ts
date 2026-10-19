@@ -239,6 +239,21 @@ export interface PdfTekstItem {
   pagina: number;
 }
 
+// Stuurtekens (behalve tab/regeleinde), vervangingsteken en privégebied: komen in gewone tekst niet voor.
+// eslint-disable-next-line no-control-regex -- stuurtekens opsporen is hier juist de bedoeling
+const ONLEESBAAR_TEKEN = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f�-]/g;
+
+/**
+ * True als de PDF-tekst grotendeels onleesbaar is. Dat gebeurt bij lettertypes zonder
+ * tekentabel (ToUnicode): de PDF-lezer kent dan de posities maar niet de letters.
+ */
+export function pdfTekstOnleesbaar(items: PdfTekstItem[]): boolean {
+  const tekst = items.map((i) => i.str).join("").replace(/\s/g, "");
+  if (tekst.length === 0) return false;
+  const fout = tekst.match(ONLEESBAAR_TEKEN)?.length ?? 0;
+  return fout >= 5 && fout / tekst.length > 0.05;
+}
+
 /**
  * Zet losse tekstfragmenten (met positie) om naar een tabel.
  * Regels = fragmenten met (ongeveer) dezelfde y; kolommen = grote horizontale tussenruimte.
@@ -250,6 +265,12 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     throw new CSVError(
       "leeg",
       "Deze PDF bevat geen leesbare tekst. Waarschijnlijk is het een scan; gebruik een digitale export of Excel/CSV.",
+    );
+  }
+  if (pdfTekstOnleesbaar(schoon)) {
+    throw new CSVError(
+      "onleesbaar",
+      "De tekst in deze PDF is niet leesbaar: de lettertypes bevatten geen tekentabel, waardoor letters en cijfers als rommel binnenkomen. Vraag de klant om een Excel- of CSV-export, of een PDF die opnieuw is opgeslagen (bijvoorbeeld via 'Afdrukken naar PDF').",
     );
   }
   const regels: PdfTekstItem[][] = [];
