@@ -47,7 +47,8 @@ export const VERPLICHTE_VELDEN: Record<Exclude<BronType, "niet_gebruiken">, stri
 /** Optionele velden per brontype: mogen leeg blijven, mapping-UI toont ze als "(optioneel)". */
 export const OPTIONELE_VELDEN: Partial<Record<Exclude<BronType, "niet_gebruiken">, string[]>> = {
   zorgopbrengsten: ["financieringsstroom"],
-  gedeclareerde_uren: ["eenheid", "financieringsstroom"],
+  directe_uren: ["kostenplaats"],
+  gedeclareerde_uren: ["eenheid", "financieringsstroom", "kostenplaats"],
 };
 
 /** Alle brontypen die een gebruiker kan kiezen (zonder "niet gebruiken"). */
@@ -839,6 +840,7 @@ const VELD_SYNONIEMEN: Record<string, string[]> = {
   directe_uren: ["direct", "declarab", "cliëntgebonden", "clientgebonden", "uren"],
   gedeclareerde_uren: ["gedeclareerde uren", "gedeclareerde minuten", "gedeclareerd", "declaratie", "uren", "minuten", "aantal"],
   eenheid: ["eenheid", "unit"],
+  kostenplaats: ["kostenplaats", "cliënt", "project"],
   uren: ["uren", "hours"],
   financieringsstroom: ["financieringsstroom", "stroom", "kader", "wet", "financier", "geldstroom", "regeling"],
 };

@@ -19,6 +19,7 @@ export const VELD_LABELS: Record<string, VeldLabel> = {
   uren: { naam: "Uren", uitleg: "Het aantal uren." },
   financieringsstroom: { naam: "Financieringsstroom (Zvw, Wlz, Wmo, PGB)", uitleg: "De financieringsstroom van de regel. Die bepaalt of de regel in uren wordt vergeleken." },
   eenheid: { naam: "Eenheid van de aantallen", uitleg: "Uren, minuten, vijfminuten-eenheden of dagen." },
+  kostenplaats: { naam: "Kostenplaats of cliënt (kolom)", uitleg: "Optioneel. Kolom met de naam van de kostenplaats of cliënt; daarmee stelt de app de koppeling voor." },
 };
 
 /** Nederlandse naam van een veld; valt terug op de technische sleutel als die onbekend is. */

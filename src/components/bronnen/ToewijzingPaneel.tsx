@@ -7,6 +7,7 @@ import { BRON_LABELS, leesGedeclareerdeUren, upsertBron, type BronBestand } from
 import { listProjecten, projectLabel as label } from "@/lib/projecten";
 import { voorstelToewijzing } from "@/lib/uren-toewijzing";
 import { NieuweKostenplaatsDialog } from "./NieuweKostenplaatsDialog";
+import KoppelOpNaam from "./KoppelOpNaam";
 
 /** Sentinels: Radix Select staat geen lege waarde toe. */
 const ALGEMEEN = "__algemeen__";
@@ -115,6 +116,7 @@ export default function ToewijzingPaneel({ bron, onChange }: { bron: BronBestand
                 }}
               />
             </div>
+            <KoppelOpNaam bron={bron} onChange={onChange} />
             {melding && <p className="text-sm text-muted-foreground" role="status">{melding}</p>}
             <div className="overflow-hidden rounded-md border">
               <table className="w-full text-sm">
