@@ -20,13 +20,15 @@
 - Bulkactie "Alle regels naar kostenplaats" vraagt nu bevestiging als er al koppelingen zijn ("X regels hebben al een kostenplaats. Overschrijven?"); zonder koppelingen direct
 - `.gitignore`: back-upbestanden (back-up-zorg-controle-basis-*.json) worden nooit meer gecommit
 
+- Herkomst en aanleverprofiel (branch `aanleverprofiel`): per bron manier, systeem, exportdatum en bewijsniveau; aanleverprofiel per klant op de dossierpagina; herkomst in het rapport en onder de Uren-controle; profielen in de back-up; voorbeelddossier met herkomst en eigen profiel. `manier` is optioneel in de opslag, zodat de exportdatum bij upload al kan worden vastgelegd
+
 ## Huidige staat
-- **Branch:** `gebruiksvriendelijk` (vanaf `main`), nog niet gemerged
-- **Laatste commit:** de laatste commit op de branch `gebruiksvriendelijk`
-- **Pull request:** nog niet gemaakt en niet gemerged; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...gebruiksvriendelijk
+- **Branch:** `aanleverprofiel` (vanaf `main`), nog niet gemerged
+- **Laatste commit:** de laatste commit op de branch `aanleverprofiel`
+- **Pull request:** nog niet gemaakt; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...aanleverprofiel
 - **Deploy status:** Lovable-preview, niet gecontroleerd
 - **Runtime-fouten:** niet gemeten
-- **Tests:** 31 testbestanden en 245 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
+- **Tests:** 37 testbestanden en 282 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
 
 ## Openstaande taken
 - [ ] Pull request maken en mergen (branch `gebruiksvriendelijk` naar `main`)
@@ -44,7 +46,7 @@
 - Opslag alleen in de browser (`localStorage`): een gewist profiel kost dossiers
 
 ## Volgende sessie: begin hier
-Draai `git pull` en `npx vitest run` (verwacht 31 testbestanden en 245 tests). Probeer daarna in de Lovable-preview: (1) op het dashboard "Voorbeelddossier laden", het dossier openen en de lijst "Wat ontbreekt nog?" nakijken (verwacht: alles compleet, volgende stap "Bekijk de controle"); (2) "Back-up maken", daarna "Back-up terugzetten" met dat bestand; (3) bij een eigen dossier de kolom "Kostenplaats of cliënt" koppelen en "Koppel automatisch op naam" proberen. Begin daarna met de proef met een echt declaratiebestand.
+Draai `git pull` en `npx vitest run` (verwacht 37 testbestanden en 282 tests). Probeer in de Lovable-preview: voorbeelddossier opnieuw laden en de kaart "Aanleverprofiel" bekijken; een bestand uploaden en het blok "Herkomst" invullen; het rapport (blok "Herkomst van de gegevens") en de regel onder de Uren-controle nakijken. Daarna de rest van 3.1 of de proef met een echt declaratiebestand.
 
 ## Bestanden gewijzigd
 - `src/components/AppShell.tsx` — "Diagnose" uit het zijmenu (route blijft)

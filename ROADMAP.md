@@ -1,6 +1,6 @@
 # Roadmap — Zorg Controle Basis
 
-**Versie:** 0.10 — 19 oktober 2026
+**Versie:** 0.11 — 19 oktober 2026
 **Status:** concept, wordt herzien aan het einde van elke sessie (zie "Herzien")
 
 ## Doel
@@ -116,7 +116,7 @@ Gevolg: de betrouwbaarheid in het rapport kan volgens mijn lezing van de code ni
 - [ ] 1.5 Generieke PDF-terugval: dezelfde briefhoofd-fout kan elders voorkomen; waarschuwen of strenger maken
 - [ ] 1.6 Bewaarde PDF opnieuw inlezen zonder opnieuw uploaden en zonder koppelingen te verliezen
 - [ ] 1.7 Testvoorbeelden (geanonimiseerde echte bestanden) per brontype
-- [ ] 1.8 Herkomst per bron vastleggen: systeem (bijvoorbeeld Nedap Ons of SnelStart), soort export, exportdatum, periode, uploadmoment
+- [x] 1.8 Herkomst per bron vastleggen: systeem (bijvoorbeeld Nedap Ons of SnelStart), soort export, exportdatum, periode, uploadmoment (gebouwd: manier, systeem, exportdatum en bewijsniveau per bron; aanleverprofiel per klant)
 - [ ] 1.9 Urenbronnen van de klant (bijvoorbeeld een Nedap Ons-verloningsrapport of urenexport) als importtype uitwerken, zodra er een voorbeeld is
 
 **Klaar als:** elk brontype heeft een testvoorbeeld; geen rij verdwijnt zonder melding; van elke bron is te zien waar hij vandaan komt; een echte klant-PDF is zonder handwerk verwerkt.
@@ -159,7 +159,7 @@ Elke stap is op zichzelf bruikbaar en krijgt één pull request. Per stap een tu
 
 ## Mijlpaal 3 — Rapportage en klantweergave
 
-- [ ] 3.1 Rapport vermeldt de herkomst van de uren en bedragen en dat ze door de klant zijn aangeleverd en niet zelfstandig zijn vastgesteld
+- [ ] 3.1 Rapport vermeldt de herkomst van de uren en bedragen en dat ze door de klant zijn aangeleverd en niet zelfstandig zijn vastgesteld (deels gedaan: blok "Herkomst van de gegevens" met tabel en de zin over de rol van de controle)
 - [ ] 3.2 Dekking ("x van 10 controles uitgevoerd") op gelijke hoogte met de score tonen, zodat een hoge score bij weinig uitgevoerde controles niet geruststelt
 - [ ] 3.3 Ruwe en afgeleide waarden naast elkaar tonen en afgeleide waarden markeren
 - [ ] 3.4 Oordelen (classificaties) vastleggen met datum en reden
@@ -218,3 +218,4 @@ Aan het einde van elke sessie, samen met `HANDOFF.md`:
 | 2026-10-19 | 0.8 | Besluit open vraag 13: de uren-controle telt mee in de hoofdscore als kerncontrole V1-C10 (tien kerncontroles). Dossiers zonder gedeclareerde uren behouden dezelfde score (de controle is dan grijs). Vier bestaande tests aangepast van 9 naar 10 kerncontroles. Stand: 22 testbestanden, 186 tests |
 | 2026-10-19 | 0.9 | Scherm Uren-controle: uitleg in gewone taal per kostenplaats, een "wat nu?"-zin, en cliënten onder een oranje of rode kostenplaats (2.0.5). Wijziging alleen in de weergave; `src/core` is niet aangeraakt |
 | 2026-10-19 | 0.10 | Gebruiksvriendelijkheid in vier onderdelen: namen en uitleg, wat ontbreekt nog, sneller koppelen aan kostenplaatsen, voorbeelddossier en back-up. 4.1 (back-up) afgevinkt. Wlz-verblijf vraagt geen kostenplaats meer |
+| 2026-10-19 | 0.11 | Herkomst per bron (manier, systeem, exportdatum, bewijsniveau) en aanleverprofiel per klant; herkomst in rapport en onder de Uren-controle; profielen in de back-up. 1.8 afgevinkt, 3.1 deels |
