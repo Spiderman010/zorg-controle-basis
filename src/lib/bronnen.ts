@@ -262,6 +262,7 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
   const naarCellen = (regel: PdfTekstItem[]) => {
     const r = [...regel].sort((a, b) => a.x - b.x);
     const cellen: string[] = [];
+    const xs: number[] = [];
     let vorigeX = -Infinity;
     let vorigeEind = -Infinity;
     for (const it of r) {
@@ -269,18 +270,22 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
       const s = it.str.trim();
       // Vetgedrukte tekst staat in sommige PDF's dubbel op dezelfde plek: overslaan.
       if (cellen.length > 0 && cellen[cellen.length - 1].endsWith(s) && it.x - vorigeX < 2) continue;
-      if (cellen.length === 0 || gat > 12) cellen.push(s);
-      else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + s;
+      if (cellen.length === 0 || gat > 12) {
+        cellen.push(s);
+        xs.push(it.x);
+      } else cellen[cellen.length - 1] += (gat > 1 ? " " : "") + s;
       vorigeX = it.x;
       vorigeEind = vorigeX + it.str.length * 5;
     }
-    return cellen;
+    return { cellen, xs };
   };
   const ontdubbel = (x: string) => {
     const h = x.length / 2;
     return x.length > 3 && x.length % 2 === 0 && x.slice(0, h) === x.slice(h) ? x.slice(0, h) : x;
   };
-  const tabel = regels.map((r) => naarCellen(r).map(ontdubbel));
+  const metPos = regels.map((r) => naarCellen(r));
+  const tabel = metPos.map((m) => m.cellen.map(ontdubbel));
+  const posities = metPos.map((m) => m.xs);
   const factuur = herkenFactuur(regels, tabel);
   if (factuur) return factuur;
   // Loonstroken: per pagina één medewerker (verzameldocument).
@@ -292,6 +297,8 @@ export function pdfItemsNaarTabel(items: PdfTekstItem[]): { headers: string[]; r
     if (l) loonRijen.push(...l.rows);
   }
   if (loonRijen.length > 0) return { headers: [...LOON_KOLOMMEN], rows: loonRijen };
+  const journaal = herkenLoonjournaal(tabel, posities);
+  if (journaal) return journaal;
   const kopIdx = tabel.findIndex((c) => c.length >= 2);
   if (kopIdx < 0) {
     throw new CSVError("onleesbaar", "We konden geen tabel met kolommen vinden in deze PDF.");
@@ -318,6 +325,87 @@ export function nlBedragNaarGetal(s: string): string | null {
 
 export const FACTUUR_KOLOMMEN = ["Periode", "Factuurnummer", "Factuurdatum", "Debiteur", "Categorie", "Omschrijving", "Bedrag"];
 export const LOON_KOLOMMEN = ["Periode", "Medewerker", "Looncomponent", "Bedrag"];
+
+const KOP_BEDRAG = /^(debet|credit|bedrag)$/i;
+const KOP_OVERIG = /^(grootboek\w*|rekening\w*|omschrijving|gb|code)$/i;
+const TOTAAL_RE = /^\s*(totaal|subtotaal|saldo|verschil)\b/i;
+
+/**
+ * Herkent een loonjournaalpost (bijv. WinSalar / Loonbureau): zoekt de echte kopregel
+ * (Debet/Credit + Grootboek/Rekening/Omschrijving), negeert het briefhoofd, lijnt bedragen
+ * uit op x-positie en voegt een Periode-kolom toe uit het briefhoofd.
+ */
+export function herkenLoonjournaal(
+  tabel: string[][],
+  posities?: number[][],
+): { headers: string[]; rows: string[][] } | null {
+  const isKop = (c: string[]) =>
+    c.some((x) => /^(debet|credit)$/i.test(x.trim())) && c.some((x) => KOP_OVERIG.test(x.trim()));
+  const kopIdx = tabel.findIndex(isKop);
+  if (kopIdx < 0) return null;
+  const kop = tabel[kopIdx].map((x) => x.trim());
+  const kopX = posities?.[kopIdx];
+  const kopTekst = kop.join("|").toLowerCase();
+
+  // Periode uit briefhoofd: label Periode/Tijdvak, anders (afdruk)datum.
+  const hoofd = tabel.slice(0, kopIdx).map((c) => c.join(" ")).join("\n");
+  const jaar = hoofd.match(/\b(20\d{2})\b/)?.[1] ?? "";
+  let periode = "";
+  const label = hoofd.match(/(?:periode|tijdvak)\s*:?\s*([^\n]+)/i)?.[1] ?? "";
+  const zoekMaand = (t: string) => MAANDEN.findIndex((m) => new RegExp(`\\b${m}\\b`, "i").test(t));
+  const iso = (j: string, m: number) => `${j}-${String(m).padStart(2, "0")}`;
+  if (label) {
+    const mi = zoekMaand(label);
+    const nr = label.match(/\b(\d{1,2})\b/)?.[1];
+    const j = label.match(/\b(20\d{2})\b/)?.[1] ?? jaar;
+    if (mi >= 0 && j) periode = iso(j, mi + 1);
+    else if (nr && Number(nr) >= 1 && Number(nr) <= 12 && j) periode = iso(j, Number(nr));
+  }
+  if (!periode) {
+    const mi = zoekMaand(hoofd);
+    const d = hoofd.match(/(\d{1,2})[-/.](\d{1,2})[-/.](20\d{2})/);
+    if (mi >= 0 && jaar) periode = iso(jaar, mi + 1);
+    else if (d) periode = iso(d[3], Number(d[2]));
+    else periode = jaar;
+  }
+
+  const bedragKol = kop.map((k, i) => (KOP_BEDRAG.test(k) ? i : -1)).filter((i) => i >= 0);
+  const rows: string[][] = [];
+  for (let r = kopIdx + 1; r < tabel.length; r++) {
+    const c = tabel[r];
+    if (c.map((x) => x.trim()).join("|").toLowerCase() === kopTekst) continue;
+    if (TOTAAL_RE.test(c.join(" "))) continue;
+    if (!c.some((x) => nlBedragNaarGetal(x) !== null)) continue;
+    const uit = kop.map(() => "");
+    const xs = posities?.[r];
+    const tekst: string[] = [];
+    c.forEach((cel, i) => {
+      const b = nlBedragNaarGetal(cel);
+      const isBedrag = b !== null && /^[€\s\-\d.,]+$/.test(cel.trim());
+      if (isBedrag && bedragKol.length) {
+        let doel = bedragKol[0];
+        if (xs && kopX) {
+          let best = Infinity;
+          for (const k of bedragKol) {
+            const d = Math.abs((kopX[k] ?? 0) - xs[i]);
+            if (d < best) { best = d; doel = k; }
+          }
+        } else {
+          doel = bedragKol.find((k) => !uit[k]) ?? bedragKol[bedragKol.length - 1];
+        }
+        uit[doel] = b!;
+      } else tekst.push(cel.trim());
+    });
+    const tekstKol = kop.map((_, i) => i).filter((i) => !bedragKol.includes(i));
+    tekstKol.forEach((k, j) => (uit[k] = tekst[j] ?? ""));
+    if (tekst.length > tekstKol.length && tekstKol.length) {
+      uit[tekstKol[tekstKol.length - 1]] = tekst.slice(tekstKol.length - 1).join(" ");
+    }
+    rows.push([periode, ...uit]);
+  }
+  if (rows.length === 0) return null;
+  return { headers: ["Periode", ...kop], rows };
+}
 
 /**
  * Herkent een salarisspecificatie (loonstrook) en haalt het brutoloon per medewerker eruit.
@@ -557,6 +645,17 @@ export function suggestMapping(type: Exclude<BronType, "niet_gebruiken">, header
   if (headers.join("|") === FACTUUR_KOLOMMEN.join("|")) {
     const relatieVeld = type === "zorgopbrengsten" ? "rekening_of_categorie" : "leverancier_of_omschrijving";
     return { periode: "Periode", bedrag: "Bedrag", [relatieVeld]: "Omschrijving" };
+  }
+  if (type === "personeelskosten" && headers.some((h) => /^(debet|credit)$/i.test(h.trim()))) {
+    const vind = (re: RegExp) => headers.find((h) => re.test(h.trim()));
+    const bedrag = vind(/^bedrag$/i) ?? vind(/^debet$/i) ?? vind(/^credit$/i);
+    const comp = vind(/^omschrijving$/i) ?? vind(/^(grootboek|rekening)/i);
+    const per = vind(/^periode$/i) ?? headers.find((h) => /periode|maand|datum/i.test(h));
+    const m: Record<string, string> = {};
+    if (per) m.periode = per;
+    if (bedrag) m.bedrag = bedrag;
+    if (comp) m.looncomponent = comp;
+    return m;
   }
   if (headers.join("|") === LOON_KOLOMMEN.join("|")) {
     return { periode: "Periode", bedrag: "Bedrag", looncomponent: "Looncomponent", medewerker: "Medewerker" };
