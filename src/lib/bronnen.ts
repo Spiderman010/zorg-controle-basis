@@ -811,6 +811,21 @@ export function detectBronType(bestandsnaam: string, headers: string[]): BronTyp
   return null;
 }
 
+/**
+ * Wisselt het type van een bron. De koppeling, classificaties, kostenplaats-koppelingen en een gekozen
+ * eenheid horen bij het oude type en worden niet meegenomen: de koppeling wordt opnieuw voorgesteld.
+ * Blijft het type gelijk, dan blijft alles staan en wordt het type alleen bevestigd.
+ */
+export function wijzigBronType(b: BronBestand, type: BronType): BronBestand {
+  if (type === b.type) return { ...b, type_auto_herkend: false, type_bevestigd: true };
+  const nieuw: BronBestand = { ...b, type, type_auto_herkend: false, type_bevestigd: true };
+  delete nieuw.classificaties;
+  delete nieuw.projecttoewijzingen;
+  delete nieuw.eenheid;
+  nieuw.mapping = type === "niet_gebruiken" ? undefined : suggestMapping(type, b.headers);
+  return nieuw;
+}
+
 // ---- Auto-suggestie kolommapping ----
 const VELD_SYNONIEMEN: Record<string, string[]> = {
   periode: ["periode", "maand", "jaar", "boekperiode", "datum"],
