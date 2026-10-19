@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { listDossiers, type Dossier, type DossierStatus } from "@/lib/dossiers";
-import { listBronnen } from "@/lib/bronnen";
+import { ALLE_BRONTYPEN, listBronnen } from "@/lib/bronnen";
 import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
 
 function voortgang(dossierId: string) {
@@ -203,7 +203,7 @@ export default function Dashboard() {
                         const v = voortgang(d.id);
                         return (
                           <div className={cn("mt-1 text-xs", v.klaar ? "text-success" : "text-muted-foreground")}>
-                            {v.aantal} / 6 bronnen{v.klaar ? " · klaar voor controle" : ""}
+                            {v.aantal} / {ALLE_BRONTYPEN.length} bronnen{v.klaar ? " · klaar voor controle" : ""}
                           </div>
                         );
                       })()}

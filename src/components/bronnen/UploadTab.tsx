@@ -10,6 +10,7 @@ import {
   type BronBestand,
   type BronType,
   CSVError,
+  ALLE_BRONTYPEN,
   detectBronType,
   deleteBron,
   isExcelBestand,
@@ -29,14 +30,7 @@ interface Props {
   onChange: () => void;
 }
 
-const KAARTEN: Exclude<BronType, "niet_gebruiken">[] = [
-  "zorgopbrengsten",
-  "personeelskosten",
-  "inhuur",
-  "betaalde_uren",
-  "directe_uren",
-  "niet_productieve_uren",
-];
+const KAARTEN = ALLE_BRONTYPEN;
 
 export default function UploadTab({ dossierId, bronnen, onChange }: Props) {
   const dubbel = vindDubbeleFacturen(bronnen);
@@ -273,6 +267,7 @@ function BestandsRij({
             <SelectItem value="inhuur">Inhuur</SelectItem>
             <SelectItem value="betaalde_uren">Betaalde uren</SelectItem>
             <SelectItem value="directe_uren">Directe uren</SelectItem>
+            <SelectItem value="gedeclareerde_uren">Gedeclareerde uren</SelectItem>
             <SelectItem value="niet_productieve_uren">Niet-productieve uren</SelectItem>
             <SelectItem value="niet_gebruiken">Niet gebruiken</SelectItem>
           </SelectContent>

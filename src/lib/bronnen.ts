@@ -7,6 +7,7 @@ export type BronType =
   | "inhuur"
   | "betaalde_uren"
   | "directe_uren"
+  | "gedeclareerde_uren"
   | "niet_productieve_uren"
   | "niet_gebruiken";
 
@@ -16,6 +17,7 @@ export const BRON_LABELS: Record<BronType, string> = {
   inhuur: "Inhuur",
   betaalde_uren: "Betaalde uren",
   directe_uren: "Directe uren",
+  gedeclareerde_uren: "Gedeclareerde uren",
   niet_productieve_uren: "Niet-productieve uren",
   niet_gebruiken: "Niet gebruiken",
 };
@@ -26,6 +28,7 @@ export const BRON_BESCHRIJVING: Record<Exclude<BronType, "niet_gebruiken">, stri
   inhuur: "Externe inhuur (zzp, detachering, uitzendkrachten) per periode.",
   betaalde_uren: "Verloonde uren per medewerker per periode.",
   directe_uren: "Cliëntgebonden / declarabele uren per medewerker.",
+  gedeclareerde_uren: "Uren die zijn gedeclareerd of gefactureerd, per periode (uit declaratie of factuur).",
   niet_productieve_uren: "Verlof, ziekte, scholing, niet-cliëntgebonden uren.",
 };
 
@@ -35,13 +38,26 @@ export const VERPLICHTE_VELDEN: Record<Exclude<BronType, "niet_gebruiken">, stri
   inhuur: ["periode", "bedrag", "leverancier_of_omschrijving"],
   betaalde_uren: ["periode", "medewerker", "betaalde_uren"],
   directe_uren: ["periode", "medewerker", "directe_uren"],
+  gedeclareerde_uren: ["periode", "gedeclareerde_uren"],
   niet_productieve_uren: ["periode", "medewerker", "uren"],
 };
 
 /** Optionele velden per brontype: mogen leeg blijven, mapping-UI toont ze als "(optioneel)". */
 export const OPTIONELE_VELDEN: Partial<Record<Exclude<BronType, "niet_gebruiken">, string[]>> = {
   zorgopbrengsten: ["financieringsstroom"],
+  gedeclareerde_uren: ["eenheid", "financieringsstroom"],
 };
+
+/** Alle brontypen die een gebruiker kan kiezen (zonder "niet gebruiken"). */
+export const ALLE_BRONTYPEN: Exclude<BronType, "niet_gebruiken">[] = [
+  "zorgopbrengsten",
+  "personeelskosten",
+  "inhuur",
+  "betaalde_uren",
+  "directe_uren",
+  "gedeclareerde_uren",
+  "niet_productieve_uren",
+];
 
 export type ClassificatieZorg = "meetellen" | "niet_meetellen" | "twijfel";
 export type ClassificatieInhuur = "zorginhuur" | "overige_inkoop" | "twijfel";
@@ -677,6 +693,81 @@ export async function parsePdf(buffer: ArrayBuffer): Promise<{ headers: string[]
   return pdfItemsNaarTabel(items);
 }
 
+// ---- Gedeclareerde uren: eenheden en vast formaat ----
+export type Eenheid = "uren" | "minuten" | "vijfminuten" | "dagen";
+
+export const EENHEID_LABEL: Record<Eenheid, string> = {
+  uren: "uren",
+  minuten: "minuten",
+  vijfminuten: "eenheden van 5 minuten",
+  dagen: "dagen",
+};
+
+/** Herkent een eenheid uit een celwaarde of kolomnaam ("Gedeclareerde minuten", "5 minuten", "dagen"). */
+export function herkenEenheid(tekst: string | undefined | null): Eenheid | undefined {
+  if (!tekst) return undefined;
+  const t = String(tekst).toLowerCase();
+  if (/(\b5|vijf)\s*-?\s*min/.test(t)) return "vijfminuten";
+  if (/\bmin(uut|uten)?\b/.test(t)) return "minuten";
+  if (/\b(dag|dagen|etmaal|etmalen)\b/.test(t)) return "dagen";
+  if (/\b(uur|uren|u|h|hrs?|hours?)\b/.test(t)) return "uren";
+  return undefined;
+}
+
+/** Rekent een aantal om naar uren. Dagen kunnen niet worden omgerekend (geeft undefined). */
+export function naarUren(aantal: number, eenheid: Eenheid): number | undefined {
+  if (eenheid === "uren") return aantal;
+  if (eenheid === "minuten") return aantal / 60;
+  if (eenheid === "vijfminuten") return (aantal * 5) / 60;
+  return undefined;
+}
+
+/** Eén gedeclareerde regel in het vaste formaat, klaar voor de verbandcontrole. */
+export interface GedeclareerdeUrenRegel {
+  regel: number; // index in bron.rijen
+  periode: string;
+  aantal: number; // zoals aangeleverd (NaN als onleesbaar)
+  eenheid: Eenheid;
+  eenheidBron: "regel" | "kolomnaam" | "aangenomen";
+  uren?: number; // in uren; leeg bij dagen of een onleesbaar aantal
+  stroom?: string;
+  reden?: "dagen" | "ongeldig";
+}
+
+/**
+ * Zet een bron van het type gedeclareerde_uren om naar het vaste formaat.
+ * Eenheid: eerst uit de eenheidkolom (per regel), anders uit de kolomnaam, anders uren (aangenomen).
+ */
+export function leesGedeclareerdeUren(b: BronBestand): GedeclareerdeUrenRegel[] {
+  const m = b.mapping ?? {};
+  const kolomIdx = (veld: string) => (m[veld] ? b.headers.indexOf(m[veld]) : -1);
+  const iAantal = kolomIdx("gedeclareerde_uren");
+  if (iAantal < 0) return [];
+  const iPeriode = kolomIdx("periode");
+  const iEenheid = kolomIdx("eenheid");
+  const iStroom = kolomIdx("financieringsstroom");
+  const uitKop = herkenEenheid(m.gedeclareerde_uren);
+  return b.rijen.map((r, regel) => {
+    const aantal = parseGetal(r[iAantal]);
+    const perRegel = iEenheid >= 0 ? herkenEenheid(r[iEenheid]) : undefined;
+    const eenheid: Eenheid = perRegel ?? uitKop ?? "uren";
+    const eenheidBron = perRegel ? "regel" : uitKop ? "kolomnaam" : "aangenomen";
+    const uren = Number.isNaN(aantal) ? undefined : naarUren(aantal, eenheid);
+    const reden = Number.isNaN(aantal) ? "ongeldig" : eenheid === "dagen" ? "dagen" : undefined;
+    const stroom = iStroom >= 0 ? (r[iStroom] ?? "").trim() || undefined : undefined;
+    return {
+      regel,
+      periode: iPeriode >= 0 ? (r[iPeriode] ?? "").trim() : "",
+      aantal,
+      eenheid,
+      eenheidBron,
+      uren,
+      stroom,
+      reden,
+    } as GedeclareerdeUrenRegel;
+  });
+}
+
 // ---- Auto-detectie bestandstype op basis van bestandsnaam + headers ----
 export function detectBronType(bestandsnaam: string, headers: string[]): BronType | null {
   const name = bestandsnaam.toLowerCase();
@@ -684,6 +775,7 @@ export function detectBronType(bestandsnaam: string, headers: string[]): BronTyp
   const test = (...keys: string[]) => keys.some((k) => name.includes(k) || h.includes(k));
 
   if (test("niet-prod", "niet_prod", "verzuim", "verlof", "ziekte")) return "niet_productieve_uren";
+  if (test("gedeclareerde uren", "gedeclareerde minuten", "gedeclareerd uren", "declaratie-uren", "declaratie uren")) return "gedeclareerde_uren";
   if (test("direct", "declarab", "cliëntgebonden", "clientgebonden")) return "directe_uren";
   if (test("betaalde uren", "verloond", "uren betaald", "loonuren")) return "betaalde_uren";
   if (test("inhuur", "zzp", "detacher", "uitzend")) return "inhuur";
@@ -702,6 +794,8 @@ const VELD_SYNONIEMEN: Record<string, string[]> = {
   medewerker: ["medewerker", "employee", "personeel", "naam", "id"],
   betaalde_uren: ["betaalde", "verloond", "loonuren", "uren"],
   directe_uren: ["direct", "declarab", "cliëntgebonden", "clientgebonden", "uren"],
+  gedeclareerde_uren: ["gedeclareerde uren", "gedeclareerde minuten", "gedeclareerd", "declaratie", "uren", "minuten", "aantal"],
+  eenheid: ["eenheid", "unit"],
   uren: ["uren", "hours"],
   financieringsstroom: ["financieringsstroom", "stroom", "kader", "wet", "financier", "geldstroom", "regeling"],
 };
@@ -762,7 +856,7 @@ export function valideerBron(b: BronBestand): ValidatieResultaat {
   if (b.rijen.length === 0) waarschuwingen.push("Bestand bevat geen datarijen.");
 
   // Check numerieke velden
-  const numerieke = ["bedrag", "betaalde_uren", "directe_uren", "uren"];
+  const numerieke = ["bedrag", "betaalde_uren", "directe_uren", "gedeclareerde_uren", "uren"];
   for (const v of verplicht) {
     if (numerieke.includes(v) && m[v]) {
       const colIdx = b.headers.indexOf(m[v]);
@@ -775,6 +869,19 @@ export function valideerBron(b: BronBestand): ValidatieResultaat {
         if (bad > 0) waarschuwingen.push(`${bad} rij(en) hebben geen geldig getal in "${m[v]}".`);
       }
     }
+  }
+
+  // Gedeclareerde uren: eenheid en dagen melden
+  if (b.type === "gedeclareerde_uren") {
+    const regels = leesGedeclareerdeUren(b);
+    const aangenomen = regels.filter((r) => r.eenheidBron === "aangenomen").length;
+    const dagen = regels.filter((r) => r.eenheid === "dagen").length;
+    if (aangenomen > 0) {
+      waarschuwingen.push(`Eenheid niet herkend bij ${aangenomen} regel(s): uren aangenomen. Controleer of dit echt uren zijn.`);
+    }
+    if (dagen > 0) signalen.push(`${dagen} regel(s) in dagen: tellen niet mee als uren.`);
+    const eenheden = [...new Set(regels.filter((r) => r.eenheidBron !== "aangenomen").map((r) => EENHEID_LABEL[r.eenheid]))];
+    if (eenheden.length > 0) signalen.push(`Eenheid: ${eenheden.join(", ")}.`);
   }
 
   // Classificatie-signaal
