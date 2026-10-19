@@ -84,7 +84,25 @@ export default function ProjectenBeheer({ dossierId, onChange }: { dossierId: st
                   <span className="font-medium">{projectLabel(p, projecten)}</span>
                   {p.stroom && <Badge variant="outline">{STROOM_LABELS[p.stroom]}</Badge>}
                 </span>
-                <span className="flex items-center gap-2">
+                <span className="flex flex-wrap items-center gap-2">
+                  <Select
+                    value={p.rol ?? GEEN_STROOM}
+                    onValueChange={(v) => {
+                      updateProject(p.id, {
+                        rol: v === GEEN_STROOM ? undefined : (v as ProjectRol),
+                        ...(v !== "client" ? { via_id: undefined } : {}),
+                      });
+                      refresh();
+                    }}
+                  >
+                    <SelectTrigger className="h-8 w-36 text-xs" aria-label="Rol"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={GEEN_STROOM}>Geen rol</SelectItem>
+                      {(Object.keys(ROL_LABELS) as ProjectRol[]).map((r) => (
+                        <SelectItem key={r} value={r}>{ROL_LABELS[r]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   {p.rol === "client" && (
                     <Select
                       value={p.via_id && projecten.some((o) => o.id === p.via_id) ? p.via_id : GEEN_STROOM}
