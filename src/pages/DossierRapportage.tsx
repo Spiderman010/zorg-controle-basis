@@ -17,6 +17,8 @@ import {
   type TrendCheckResult,
 } from "@/core";
 import { StatusBadge } from "@/components/controle/StatusBadge";
+import { HerkomstRapportBlok } from "@/components/rapport/HerkomstRapportBlok";
+import { listBronnen } from "@/lib/bronnen";
 
 const CHECK_CODES: Record<CheckId, string> = {
   revenue_reconciliation: "V1-C01",
@@ -289,6 +291,8 @@ export default function DossierRapportage() {
           </ul>
         </CardContent>
       </Card>
+
+      <HerkomstRapportBlok bronnen={listBronnen(d.id)} />
 
       <Card className="print-card">
         <CardHeader><CardTitle className="text-base">Aanvullende verbandscontroles</CardTitle></CardHeader>

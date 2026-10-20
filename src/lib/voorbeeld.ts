@@ -3,9 +3,12 @@
 import { upsertBron, deleteBronnenVanDossier, type BronBestand } from "./bronnen";
 import { upsertDossier, deleteDossier, listDossiers, type Dossier } from "./dossiers";
 import { upsertProject, deleteProjectsVanDossier, type Project } from "./projecten";
+import { saveKlantprofiel, deleteKlantprofiel } from "./klantprofiel";
 
 export const VOORBEELD_DOSSIER_ID = "voorbeeld-zorg-voorbeeld-bv-2026-09";
 export const VOORBEELD_NAAM = "VOORBEELD Zorg Voorbeeld BV - Test 2026-09";
+/** Eigen bedrijfsnaam, zodat het voorbeeldprofiel nooit een echt profiel raakt. */
+export const VOORBEELD_BEDRIJFSNAAM = "VOORBEELD Zorg Voorbeeld BV";
 
 const ZVW_ID = "voorbeeld-zvw-team";
 const WMO_ID = "voorbeeld-wmo-team";
@@ -13,7 +16,7 @@ const AANGEMAAKT = "2026-10-19T00:00:00.000Z";
 
 const dossier: Dossier = {
   id: VOORBEELD_DOSSIER_ID,
-  bedrijfsnaam: "Zorg Voorbeeld BV",
+  bedrijfsnaam: VOORBEELD_BEDRIJFSNAAM,
   dossiernaam: VOORBEELD_NAAM,
   periode_van: "2026-09-01",
   periode_tot: "2026-09-30",
@@ -34,6 +37,7 @@ const basis = {
   type_auto_herkend: false,
   type_bevestigd: true,
   preview_rows: 5,
+  herkomst: { manier: "zelf_opgehaald" as const, systeem: "Voorbeeldsysteem", export_datum: "2026-10-01" },
 };
 
 const bronnen: BronBestand[] = [
@@ -103,6 +107,7 @@ export function verwijderVoorbeeldDossier() {
   deleteProjectsVanDossier(VOORBEELD_DOSSIER_ID);
   deleteBronnenVanDossier(VOORBEELD_DOSSIER_ID);
   deleteDossier(VOORBEELD_DOSSIER_ID);
+  deleteKlantprofiel(VOORBEELD_BEDRIJFSNAAM);
 }
 
 /** Laadt het voorbeeld opnieuw in: eerst het oude voorbeeld weg, dan het nieuwe. Geeft het dossier-id terug. */
@@ -111,5 +116,6 @@ export function laadVoorbeeldDossier(): string {
   upsertDossier(dossier);
   kostenplaatsen.forEach(upsertProject);
   bronnen.forEach(upsertBron);
+  saveKlantprofiel(VOORBEELD_BEDRIJFSNAAM, { systemen: ["Voorbeeldsysteem"], standaard_manier: "zelf_opgehaald", frequentie: "maand" });
   return VOORBEELD_DOSSIER_ID;
 }

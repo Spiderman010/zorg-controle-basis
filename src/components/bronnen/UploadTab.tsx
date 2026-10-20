@@ -24,16 +24,22 @@ import {
   wijzigBronType,
   vindDubbeleFacturen,
 } from "@/lib/bronnen";
+import { datumUitLastModified } from "@/lib/herkomst";
+import { getKlantprofiel, herkomstVoorUpload, type Klantprofiel } from "@/lib/klantprofiel";
+import { HerkomstBlok } from "./HerkomstBlok";
 
 interface Props {
   dossierId: string;
   bronnen: BronBestand[];
   onChange: () => void;
+  /** Voor het aanleverprofiel: voorvullen van herkomst en suggesties voor het systeem. */
+  bedrijfsnaam?: string;
 }
 
 const KAARTEN = ALLE_BRONTYPEN;
 
-export default function UploadTab({ dossierId, bronnen, onChange }: Props) {
+export default function UploadTab({ dossierId, bronnen, onChange, bedrijfsnaam }: Props) {
+  const profiel = getKlantprofiel(bedrijfsnaam);
   const dubbel = vindDubbeleFacturen(bronnen);
   return (
     <div className="space-y-4">
@@ -44,11 +50,13 @@ export default function UploadTab({ dossierId, bronnen, onChange }: Props) {
           key={type}
           dossierId={dossierId}
           type={type}
+          profiel={profiel}
           bestanden={bronnen.filter((b) => b.type === type)}
           onChange={onChange}
         />
       ))}
       <UnclassifiedKaart
+        profiel={profiel}
         bestanden={bronnen.filter((b) => !b.fout && !b.type_bevestigd)}
         onChange={onChange}
       />
@@ -140,18 +148,20 @@ function BronKaart({
   type,
   bestanden,
   onChange,
+  profiel,
 }: {
   dossierId: string;
   type: Exclude<BronType, "niet_gebruiken">;
   bestanden: BronBestand[];
   onChange: () => void;
+  profiel?: Klantprofiel;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
     for (const file of Array.from(files)) {
-      await importFile(dossierId, file, type);
+      await importFile(dossierId, file, type, profiel);
     }
     onChange();
   };
@@ -182,7 +192,7 @@ function BronKaart({
         </Button>
         <ul className="space-y-2">
           {bestanden.map((b) => (
-            <BestandsRij key={b.id} bron={b} onChange={onChange} />
+            <BestandsRij key={b.id} bron={b} onChange={onChange} suggesties={profiel?.systemen} />
           ))}
         </ul>
       </CardContent>
@@ -190,7 +200,15 @@ function BronKaart({
   );
 }
 
-function UnclassifiedKaart({ bestanden, onChange }: { bestanden: BronBestand[]; onChange: () => void }) {
+function UnclassifiedKaart({
+  bestanden,
+  onChange,
+  profiel,
+}: {
+  bestanden: BronBestand[];
+  onChange: () => void;
+  profiel?: Klantprofiel;
+}) {
   if (bestanden.length === 0) return null;
   return (
     <Card className="border-dashed">
@@ -203,7 +221,7 @@ function UnclassifiedKaart({ bestanden, onChange }: { bestanden: BronBestand[]; 
         </p>
         <ul className="space-y-2">
           {bestanden.map((b) => (
-            <BestandsRij key={b.id} bron={b} onChange={onChange} forceTypePicker />
+            <BestandsRij key={b.id} bron={b} onChange={onChange} forceTypePicker suggesties={profiel?.systemen} />
           ))}
         </ul>
       </CardContent>
@@ -215,10 +233,12 @@ function BestandsRij({
   bron,
   onChange,
   forceTypePicker = false,
+  suggesties,
 }: {
   bron: BronBestand;
   onChange: () => void;
   forceTypePicker?: boolean;
+  suggesties?: string[];
 }) {
   if (bron.fout) {
     return (
@@ -297,6 +317,7 @@ function BestandsRij({
           Verwijder
         </Button>
       </div>
+      <HerkomstBlok bron={bron} onChange={onChange} suggesties={suggesties} />
       {bron.type_auto_herkend && !bron.type_bevestigd && (
         <p className="mt-1 text-[11px] text-muted-foreground">Type automatisch herkend — bevestig of wijzig.</p>
       )}
@@ -304,7 +325,7 @@ function BestandsRij({
   );
 }
 
-async function importFile(dossierId: string, file: File, voorgesteldType?: BronType) {
+async function importFile(dossierId: string, file: File, voorgesteldType?: BronType, profiel?: Klantprofiel) {
   try {
     if (file.size === 0) {
       upsertBron(makeFout(dossierId, file.name, "Dit bestand is leeg. Upload een bestand met gegevens."));
@@ -322,6 +343,7 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
     const auto = voorgesteldType ?? detectBronType(file.name, headers);
     const isManueel = !!voorgesteldType;
     const id = crypto.randomUUID();
+    const exportDatum = datumUitLastModified(file.lastModified);
     if (isPdfBestand(file.name)) {
       const dataUrl = await new Promise<string>((res, rej) => {
         const r = new FileReader();
@@ -342,6 +364,8 @@ async function importFile(dossierId: string, file: File, voorgesteldType?: BronT
       headers,
       rijen: rows,
       preview_rows: Math.min(5, rows.length),
+      // Herkomst voorgevuld uit het aanleverprofiel (manier, eerste systeem) en de wijzigingsdatum van het bestand; aanpasbaar.
+      herkomst: herkomstVoorUpload(profiel, exportDatum),
     });
   } catch (e) {
     const msg =

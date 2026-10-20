@@ -7,6 +7,7 @@ import { getDossier } from "@/lib/dossiers";
 import { hasMinimaleBronnen } from "@/lib/datasetBuilder";
 import { listBronnen } from "@/lib/bronnen";
 import { voortgangDossier } from "@/lib/dossier-voortgang";
+import { AanleverprofielKaart } from "@/components/dossier/AanleverprofielKaart";
 import ProjectenBeheer from "@/components/projecten/ProjectenBeheer";
 import ToerekeningOverzicht from "@/components/projecten/ToerekeningOverzicht";
 
@@ -24,7 +25,8 @@ export default function DossierDetail() {
   }
 
   const klaarVoorControle = hasMinimaleBronnen(d.id);
-  const voortgang = voortgangDossier(listBronnen(d.id), d.id);
+  const bronnen = listBronnen(d.id);
+  const voortgang = voortgangDossier(bronnen, d.id);
 
   const rows: Array<[string, string]> = [
     ["Bedrijfsnaam", d.bedrijfsnaam],
@@ -78,6 +80,11 @@ export default function DossierDetail() {
               </li>
             ))}
           </ul>
+          {voortgang.herkomstOntbreekt > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Herkomst bij {voortgang.herkomstOntbreekt} {voortgang.herkomstOntbreekt === 1 ? "bron" : "bronnen"} niet vastgelegd.
+            </p>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-4 border-t pt-4">
             <p className="text-sm">{voortgang.volgendeStap.tekst}</p>
             <Button asChild>
@@ -86,6 +93,8 @@ export default function DossierDetail() {
           </div>
         </CardContent>
       </Card>
+
+      <AanleverprofielKaart key={`ap-${d.id}`} bedrijfsnaam={d.bedrijfsnaam} bronnen={bronnen} />
 
       <ProjectenBeheer key={d.id} dossierId={d.id} />
 

@@ -11,6 +11,7 @@ export const BACKUP_WAARSCHUWING = "Dit bestand kan gegevens van medewerkers en 
 interface Teruggezet {
   backup: Backup;
   aantal: { dossiers: number; projecten: number; bronnen: number };
+  profielen: number;
 }
 
 /** Voorbeelddossier en back-up op het dashboard. */
@@ -66,7 +67,7 @@ export function VoorbeeldEnBackup({ onChange }: { onChange: () => void }) {
     setFout("");
     setMelding("");
     setOverschrijven(false);
-    setTeZetten({ backup: r.backup, aantal: r.aantal });
+    setTeZetten({ backup: r.backup, aantal: r.aantal, profielen: r.profielen });
   };
 
   const bevestigTerugzetten = () => {
@@ -105,7 +106,7 @@ export function VoorbeeldEnBackup({ onChange }: { onChange: () => void }) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium">Back-up</p>
             <p className="text-xs text-muted-foreground">
-              Eén bestand met alle dossiers, kostenplaatsen en bronnen. {BACKUP_WAARSCHUWING}
+              Eén bestand met alle dossiers, kostenplaatsen, bronnen en aanleverprofielen. {BACKUP_WAARSCHUWING}
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -125,7 +126,8 @@ export function VoorbeeldEnBackup({ onChange }: { onChange: () => void }) {
             <DialogTitle>Back-up terugzetten?</DialogTitle>
             <DialogDescription>
               Dit bestand bevat {teZetten?.aantal.dossiers} dossier(s), {teZetten?.aantal.projecten} kostenplaats(en) en{" "}
-              {teZetten?.aantal.bronnen} bron(nen). {BACKUP_WAARSCHUWING}
+              {teZetten?.aantal.bronnen} bron(nen)
+              {teZetten && teZetten.profielen > 0 ? `, en ${teZetten.profielen} aanleverprofiel(en)` : ""}. {BACKUP_WAARSCHUWING}
             </DialogDescription>
           </DialogHeader>
           <label className="flex items-start gap-2 text-sm">
