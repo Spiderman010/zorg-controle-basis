@@ -20,15 +20,16 @@
 - Bulkactie "Alle regels naar kostenplaats" vraagt nu bevestiging als er al koppelingen zijn ("X regels hebben al een kostenplaats. Overschrijven?"); zonder koppelingen direct
 - `.gitignore`: back-upbestanden (back-up-zorg-controle-basis-*.json) worden nooit meer gecommit
 
+- Scherm Controle: tegels Resturen en Resturen euro-impact tonen "—" met de hint "Geen betaalde uren aangeleverd" zonder betaalde uren; het financieringsmix-signaal is een neutrale badge "Info" in plaats van oranje
 - Herkomst en aanleverprofiel (branch `aanleverprofiel`): per bron manier, systeem, exportdatum en bewijsniveau; aanleverprofiel per klant op de dossierpagina; herkomst in het rapport en onder de Uren-controle; profielen in de back-up; voorbeelddossier met herkomst en eigen profiel. `manier` is optioneel in de opslag, zodat de exportdatum bij upload al kan worden vastgelegd
 
 ## Huidige staat
-- **Branch:** `aanleverprofiel` (vanaf `main`), nog niet gemerged
+- **Branch:** `aanleverprofiel` (vanaf `main`, inclusief `controle-duidelijkheid` uit PR #9), nog niet gemerged
 - **Laatste commit:** de laatste commit op de branch `aanleverprofiel`
 - **Pull request:** nog niet gemaakt; link: https://github.com/Spiderman010/zorg-controle-basis/compare/main...aanleverprofiel
 - **Deploy status:** Lovable-preview, niet gecontroleerd
 - **Runtime-fouten:** niet gemeten
-- **Tests:** 37 testbestanden en 282 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
+- **Tests:** 39 testbestanden en 286 tests, alles groen; typecheck zonder fouten, build in orde, lint: 14 bestaande meldingen (2 fouten in shadcn-bestanden)
 
 ## Openstaande taken
 - [ ] Pull request maken en mergen (branch `gebruiksvriendelijk` naar `main`)
@@ -46,7 +47,7 @@
 - Opslag alleen in de browser (`localStorage`): een gewist profiel kost dossiers
 
 ## Volgende sessie: begin hier
-Draai `git pull` en `npx vitest run` (verwacht 37 testbestanden en 282 tests). Probeer in de Lovable-preview: voorbeelddossier opnieuw laden en de kaart "Aanleverprofiel" bekijken; een bestand uploaden en het blok "Herkomst" invullen; het rapport (blok "Herkomst van de gegevens") en de regel onder de Uren-controle nakijken. Daarna de rest van 3.1 of de proef met een echt declaratiebestand.
+Draai `git pull` en `npx vitest run` (verwacht 39 testbestanden en 286 tests). Probeer in de Lovable-preview: voorbeelddossier opnieuw laden en de kaart "Aanleverprofiel" bekijken; een bestand uploaden en het blok "Herkomst" invullen; het rapport (blok "Herkomst van de gegevens") en de regel onder de Uren-controle nakijken. Daarna de rest van 3.1 of de proef met een echt declaratiebestand.
 
 ## Bestanden gewijzigd
 - `src/components/AppShell.tsx` — "Diagnose" uit het zijmenu (route blijft)
